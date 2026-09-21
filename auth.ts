@@ -35,7 +35,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   callbacks: {
-    async jwt({ token, profile }) {
+    async jwt({ token, profile, account }) {
       // `profile` is only present right after sign-in; persist the role
       // we derive from it into the JWT so it survives subsequent requests.
       if (profile) {
@@ -53,9 +53,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
         }
       }
+
+      // Kept so logout can end the session at Authentik too (see
+      // lib/logout.ts) — signOut() only clears our own cookie, and without
+      // this Authentik's SSO session would silently sign the user back in.
+      if (account?.id_token) {
+        token.idToken = account.id_token;
+      }
+
       return token;
     },
     async session({ session, token }) {
+      if (token.sub) {
+        session.user.id = token.sub;
+      }
       session.user.role = token.role;
       return session;
     },

@@ -4,6 +4,7 @@ import type { Role } from "@/lib/roles";
 declare module "next-auth" {
   interface Session {
     user: {
+      id: string;
       role?: Role;
     } & DefaultSession["user"];
   }
@@ -15,5 +16,9 @@ declare module "next-auth" {
 declare module "@auth/core/jwt" {
   interface JWT {
     role?: Role;
+    // Authentik's ID token, kept server-side only (never mirrored onto
+    // Session) so it can be sent back as id_token_hint on RP-initiated
+    // logout — see lib/logout.ts.
+    idToken?: string;
   }
 }
