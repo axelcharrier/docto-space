@@ -1,3 +1,8 @@
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+
+# Needed so Prisma can run its postinstall (fetches the query engine binary).
+onlyBuiltDependencies:
+  - prisma
+  - "@prisma/engines"

@@ -1,0 +1,124 @@
+datasource db {
+  provider = "mysql" // compatible MariaDB
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- Modèles canoniques Auth.js (ne pas renommer les champs) ---
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(ASTRONAUTE)
+  specialite    String?   // renseigné uniquement si role = MEDECIN
+
+  accounts      Account[]
+  sessions      Session[]
+
+  demandesEnvoyees  DemandeConsultation[] @relation("DemandesAstronaute")
+  demandesRecues    DemandeConsultation[] @relation("DemandesMedecin")
+}
+
+enum Role {
+  ASTRONAUTE
+  MEDECIN
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Métier ---
+model DemandeConsultation {
+  id             String   @id @default(uuid())
+  astronaute     User     @relation("DemandesAstronaute", fields: [astronauteId], references: [id])
+  astronauteId   String
+  medecin        User     @relation("DemandesMedecin", fields: [medecinId], references: [id])
+  medecinId      String
+  dateSouhaitee  DateTime
+  heureSouhaitee DateTime
+  commentaire    String?  @db.Text
+  statut         StatutDemande @default(EN_ATTENTE)
+  lienVisio      String?
+  prescriptions  Prescription[]
+  createdAt      DateTime @default(now())
+}
+
+enum StatutDemande {
+  EN_ATTENTE
+  VALIDEE
+  REFUSEE
+}
+
+model Prescription {
+  id               String   @id @default(uuid())
+  demande          DemandeConsultation @relation(fields: [demandeId], references: [id])
+  demandeId        String
+  datePrescription DateTime @default(now())
+  lignes           LignePrescription[]
+}
+
+model Medicament {
+  id             String   @id @default(uuid())
+  nom            String
+  dosageUnitaire String
+  lignes         LignePrescription[]
+}
+
+model LignePrescription {
+  id             String   @id @default(uuid())
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id])
+  prescriptionId String
+  medicament     Medicament @relation(fields: [medicamentId], references: [id])
+  medicamentId   String
+  posologie      String
+  prises         PrisePlanifiee[]
+}
+
+model PrisePlanifiee {
+  id              String   @id @default(uuid())
+  ligne           LignePrescription @relation(fields: [ligneId], references: [id])
+  ligneId         String
+  dateHeurePrevue DateTime
+  statut          StatutPrise @default(A_VENIR)
+}
+
+enum StatutPrise {
+  A_VENIR
+  PRISE
+  MANQUEE
+}
