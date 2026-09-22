@@ -27,6 +27,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
     && rm -rf /var/lib/apt/lists/*
 COPY prisma ./prisma
 COPY prisma.config.ts ./
+# The seed talks to the database through PrismaClient, which only exists
+# once it is generated — the builder stage's copy never lands in this image.
+# The URL is a build-time placeholder, scoped to this RUN so it can't leak
+# into the running container: prisma.config.ts requires DATABASE_URL to be
+# set, but generating the client never connects to anything.
+RUN DATABASE_URL=mysql://build:build@127.0.0.1:3306/build pnpm exec prisma generate
 # `db seed` runs prisma/seed.ts (see prisma.config.ts): it fills the official
 # medicine catalogue from the file committed under prisma/data. Idempotent,
 # so re-running it on every deploy is a no-op once the catalogue is loaded.

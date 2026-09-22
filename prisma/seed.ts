@@ -8,9 +8,18 @@
 // Idempotent: safe to run on every deploy, right after `migrate deploy`.
 
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { join } from "node:path";
-import { PrismaClient } from "@prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+
+// `@prisma/client` and the adapter are CommonJS. Node 24 can usually pick
+// their named exports out of an ESM `import`, Node 22 (the one in the
+// migrate image) cannot — it fails with "Named export 'PrismaClient' not
+// found". Going through createRequire works on every version, and the `as
+// typeof import(...)` casts keep the types.
+const require = createRequire(import.meta.url);
+const { PrismaClient } = require("@prisma/client") as typeof import("@prisma/client");
+const { PrismaMariaDb } =
+  require("@prisma/adapter-mariadb") as typeof import("@prisma/adapter-mariadb");
 
 const CHUNK = 1000;
 
