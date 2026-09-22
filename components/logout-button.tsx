@@ -1,14 +1,12 @@
 import { logout } from "@/lib/logout";
+import { Button } from "@/components/ui/button";
 
 export function LogoutButton() {
   return (
     <form action={logout}>
-      <button
-        type="submit"
-        className="rounded-full border border-zinc-300 px-4 py-2 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-      >
+      <Button type="submit" variant="outline" size="sm">
         Se déconnecter
-      </button>
+      </Button>
     </form>
   );
 }

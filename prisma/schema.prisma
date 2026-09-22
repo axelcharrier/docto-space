@@ -21,6 +21,7 @@ model User {
 
   demandesEnvoyees  DemandeConsultation[] @relation("DemandesAstronaute")
   demandesRecues    DemandeConsultation[] @relation("DemandesMedecin")
+  notifications     Notification[]
 }
 
 enum Role {
@@ -64,24 +65,54 @@ model VerificationToken {
 
 // --- Métier ---
 model DemandeConsultation {
-  id             String   @id @default(uuid())
-  astronaute     User     @relation("DemandesAstronaute", fields: [astronauteId], references: [id])
-  astronauteId   String
-  medecin        User     @relation("DemandesMedecin", fields: [medecinId], references: [id])
-  medecinId      String
-  dateSouhaitee  DateTime
-  heureSouhaitee DateTime
-  commentaire    String?  @db.Text
-  statut         StatutDemande @default(EN_ATTENTE)
-  lienVisio      String?
-  prescriptions  Prescription[]
-  createdAt      DateTime @default(now())
+  id               String   @id @default(uuid())
+  astronaute       User     @relation("DemandesAstronaute", fields: [astronauteId], references: [id])
+  astronauteId     String
+  // null tant qu'aucun médecin n'a traité la demande
+  medecin          User?    @relation("DemandesMedecin", fields: [medecinId], references: [id])
+  medecinId        String?
+  dateSouhaitee    DateTime
+  dateConsultation DateTime?
+  commentaire      String   @db.Text
+  statut           StatutDemande @default(EN_ATTENTE)
+  motifRefus       String?  @db.Text
+  lienVisio        String?
+  visioRoomId      String?
+  prescriptions    Prescription[]
+  notifications    Notification[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([statut])
 }
 
 enum StatutDemande {
   EN_ATTENTE
   VALIDEE
   REFUSEE
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      TypeNotification
+  titre     String
+  message   String   @db.Text
+  lienUrl   String?
+  lue       Boolean  @default(false)
+  demande   DemandeConsultation? @relation(fields: [demandeId], references: [id], onDelete: SetNull)
+  demandeId String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, lue])
+  @@index([userId, createdAt])
+}
+
+enum TypeNotification {
+  NOUVELLE_DEMANDE
+  DEMANDE_ACCEPTEE
+  DEMANDE_REFUSEE
 }
 
 model Prescription {
