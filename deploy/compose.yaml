@@ -1,6 +1,7 @@
-# Reference compose file for the VPS (/srv/docker/doctospace/compose.yaml).
-# Secrets go in a sibling .env (perms 600) — see .env.example next to this
-# file for the full list of variables.
+# Deployed as-is to /srv/docker/doctospace/compose.yaml by the deploy
+# workflow on every push to main — edit it here, not on the VPS.
+# Secrets go in a sibling .env (perms 600, managed by hand on the VPS) — see
+# .env.example next to this file for the full list of variables.
 services:
   migrate:
     image: ghcr.io/axelcharrier/doctospace-migrate:latest
