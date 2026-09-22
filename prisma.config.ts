@@ -10,6 +10,11 @@ try {
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
+  migrations: {
+    // Runs after `prisma migrate dev` / `migrate deploy`: fills the official
+    // medicine catalogue (idempotent, see prisma/seed.ts).
+    seed: "node --experimental-strip-types prisma/seed.ts",
+  },
   // Only used by `prisma migrate`/`db` commands (schema diffing against the
   // live database), not by PrismaClient at runtime — the app connects via
   // the driver adapter in lib/prisma.ts instead.

@@ -1,11 +1,15 @@
 import {
   CalendarBlankIcon,
   ClockIcon,
+  PencilSimpleIcon,
+  PillIcon,
+  PlusIcon,
   StethoscopeIcon,
   VideoCameraIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { auth } from "@/auth";
 import { listConsultationsMedecin, listDemandesEnAttente } from "@/lib/data/demandes";
+import { listAstronautes, listPrescriptionsMedecin } from "@/lib/data/prescriptions";
 import { formatDateTime, toLocalInputValue } from "@/lib/datetime";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,14 +22,19 @@ import {
 } from "@/components/ui/card";
 import { MetaLine } from "@/components/meta-line";
 import { PageHeader } from "@/components/page-header";
+import { PrescriptionLignes } from "@/components/prescription-lignes";
 import { SectionTitle } from "@/components/section-title";
 import { DemandeActions } from "./demande-actions";
+import { PrescriptionDialog, SupprimerPrescriptionDialog } from "./prescription-dialog";
 
 export default async function DoctorPage() {
   const session = await auth();
-  const [demandes, consultations] = await Promise.all([
+  const medecinId = session!.user.id;
+  const [demandes, consultations, prescriptions, astronautes] = await Promise.all([
     listDemandesEnAttente(),
-    listConsultationsMedecin(session!.user.id),
+    listConsultationsMedecin(medecinId),
+    listPrescriptionsMedecin(medecinId),
+    listAstronautes(),
   ]);
 
   return (
@@ -33,6 +42,17 @@ export default async function DoctorPage() {
       <PageHeader
         title="Espace médecin"
         description={`Connecté en tant que ${session?.user?.name ?? session?.user?.email}.`}
+        action={
+          <PrescriptionDialog
+            astronautes={astronautes}
+            trigger={
+              <Button>
+                <PlusIcon />
+                Nouvelle prescription
+              </Button>
+            }
+          />
+        }
       />
 
       <section className="flex flex-col gap-4">
@@ -100,8 +120,8 @@ export default async function DoctorPage() {
                   <CardContent>
                     <p className="whitespace-pre-line">{c.commentaire}</p>
                   </CardContent>
-                  {c.lienVisio && (
-                    <CardFooter>
+                  <CardFooter className="flex flex-wrap gap-2">
+                    {c.lienVisio && (
                       <Button
                         size="sm"
                         nativeButton={false}
@@ -110,8 +130,75 @@ export default async function DoctorPage() {
                         <VideoCameraIcon />
                         Rejoindre la visio
                       </Button>
-                    </CardFooter>
-                  )}
+                    )}
+                    <PrescriptionDialog
+                      astronautes={astronautes}
+                      astronauteId={c.astronauteId}
+                      demandeId={c.id}
+                      trigger={
+                        <Button size="sm" variant="outline">
+                          <PillIcon />
+                          Prescrire
+                        </Button>
+                      }
+                    />
+                  </CardFooter>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <SectionTitle icon={PillIcon} count={prescriptions.length}>
+          Mes prescriptions
+        </SectionTitle>
+
+        {prescriptions.length === 0 ? (
+          <p className="text-muted-foreground">
+            Aucune prescription émise. Vous pouvez prescrire depuis une consultation ou
+            directement, sans rendez-vous.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {prescriptions.map((p) => (
+              <li key={p.id}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{p.astronaute.name ?? p.astronaute.email}</CardTitle>
+                    <CardDescription className="flex flex-col gap-1">
+                      <MetaLine icon={ClockIcon} label="Prescrite le">
+                        Prescrite le {formatDateTime(p.datePrescription)}
+                      </MetaLine>
+                      {p.demande?.dateConsultation && (
+                        <MetaLine icon={CalendarBlankIcon} label="Consultation du">
+                          Suite à la consultation du {formatDateTime(p.demande.dateConsultation)}
+                        </MetaLine>
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    <PrescriptionLignes lignes={p.lignes} />
+                    {p.commentaire && (
+                      <p className="border-t pt-4 whitespace-pre-line text-muted-foreground">
+                        {p.commentaire}
+                      </p>
+                    )}
+                  </CardContent>
+                  <CardFooter className="flex flex-wrap gap-2">
+                    <PrescriptionDialog
+                      astronautes={astronautes}
+                      prescription={p}
+                      trigger={
+                        <Button size="sm" variant="outline">
+                          <PencilSimpleIcon />
+                          Modifier
+                        </Button>
+                      }
+                    />
+                    <SupprimerPrescriptionDialog prescriptionId={p.id} />
+                  </CardFooter>
                 </Card>
               </li>
             ))}
