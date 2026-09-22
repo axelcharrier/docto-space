@@ -8,7 +8,7 @@ export default async function AstronautNotificationsPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-8 sm:p-16">
-      <NotificationsList notifications={notifications} />
+      <NotificationsList notifications={notifications} backHref="/astronaut" />
     </main>
   );
 }
