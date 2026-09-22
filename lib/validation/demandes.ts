@@ -6,7 +6,12 @@ const futureDateTime = z
   .transform((value, ctx) => {
     const date = parseLocalDateTime(value);
     if (!date) {
-      ctx.addIssue({ code: "custom", message: "Date invalide" });
+      // The date/time field submits an empty string until both halves are
+      // picked, so distinguish "nothing chosen" from a malformed value.
+      ctx.addIssue({
+        code: "custom",
+        message: value ? "Date invalide" : "Choisissez une date et une heure",
+      });
       return z.NEVER;
     }
     if (date <= new Date()) {

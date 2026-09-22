@@ -1,3 +1,9 @@
+import {
+  CalendarBlankIcon,
+  ClockIcon,
+  StethoscopeIcon,
+  VideoCameraIcon,
+} from "@phosphor-icons/react/dist/ssr";
 import { auth } from "@/auth";
 import { listConsultationsMedecin, listDemandesEnAttente } from "@/lib/data/demandes";
 import { formatDateTime, toLocalInputValue } from "@/lib/datetime";
@@ -10,6 +16,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { MetaLine } from "@/components/meta-line";
+import { PageHeader } from "@/components/page-header";
+import { SectionTitle } from "@/components/section-title";
 import { DemandeActions } from "./demande-actions";
 
 export default async function DoctorPage() {
@@ -20,16 +29,16 @@ export default async function DoctorPage() {
   ]);
 
   return (
-    <main className="flex flex-1 flex-col gap-10 p-8 sm:p-16">
-      <div>
-        <h1 className="text-3xl font-semibold">Espace médecin</h1>
-        <p className="text-muted-foreground">
-          Connecté en tant que {session?.user?.name ?? session?.user?.email}.
-        </p>
-      </div>
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-10 px-4 py-8 sm:py-12">
+      <PageHeader
+        title="Espace médecin"
+        description={`Connecté en tant que ${session?.user?.name ?? session?.user?.email}.`}
+      />
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-xl font-semibold">Demandes en attente ({demandes.length})</h2>
+        <SectionTitle icon={StethoscopeIcon} count={demandes.length}>
+          Demandes en attente
+        </SectionTitle>
 
         {demandes.length === 0 ? (
           <p className="text-muted-foreground">Aucune demande de consultation en attente.</p>
@@ -39,16 +48,18 @@ export default async function DoctorPage() {
               <li key={demande.id}>
                 <Card>
                   <CardHeader>
-                    <CardTitle>
-                      {demande.astronaute.name ?? demande.astronaute.email}
-                    </CardTitle>
-                    <CardDescription>
-                      Créneau souhaité : {formatDateTime(demande.dateSouhaitee)} · demande du{" "}
-                      {formatDateTime(demande.createdAt)}
+                    <CardTitle>{demande.astronaute.name ?? demande.astronaute.email}</CardTitle>
+                    <CardDescription className="flex flex-col gap-1">
+                      <MetaLine icon={CalendarBlankIcon} label="Créneau souhaité">
+                        {formatDateTime(demande.dateSouhaitee)}
+                      </MetaLine>
+                      <MetaLine icon={ClockIcon} label="Demande reçue le">
+                        Reçue le {formatDateTime(demande.createdAt)}
+                      </MetaLine>
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="whitespace-pre-line text-sm">{demande.commentaire}</p>
+                    <p className="whitespace-pre-line">{demande.commentaire}</p>
                   </CardContent>
                   <CardFooter>
                     <DemandeActions
@@ -65,9 +76,9 @@ export default async function DoctorPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-xl font-semibold">
-          Mes consultations planifiées ({consultations.length})
-        </h2>
+        <SectionTitle icon={CalendarBlankIcon} count={consultations.length}>
+          Mes consultations planifiées
+        </SectionTitle>
 
         {consultations.length === 0 ? (
           <p className="text-muted-foreground">Aucune consultation à venir.</p>
@@ -78,12 +89,16 @@ export default async function DoctorPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>{c.astronaute.name ?? c.astronaute.email}</CardTitle>
-                    <CardDescription>
-                      {c.dateConsultation && formatDateTime(c.dateConsultation)}
+                    <CardDescription className="flex flex-col gap-1">
+                      {c.dateConsultation && (
+                        <MetaLine icon={CalendarBlankIcon} label="Consultation le">
+                          {formatDateTime(c.dateConsultation)}
+                        </MetaLine>
+                      )}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="whitespace-pre-line text-sm">{c.commentaire}</p>
+                    <p className="whitespace-pre-line">{c.commentaire}</p>
                   </CardContent>
                   {c.lienVisio && (
                     <CardFooter>
@@ -92,6 +107,7 @@ export default async function DoctorPage() {
                         nativeButton={false}
                         render={<a href={c.lienVisio} target="_blank" rel="noopener noreferrer" />}
                       >
+                        <VideoCameraIcon />
                         Rejoindre la visio
                       </Button>
                     </CardFooter>

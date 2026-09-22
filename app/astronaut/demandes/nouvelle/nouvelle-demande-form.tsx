@@ -1,40 +1,26 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
-import { toast } from "sonner";
 import { creerDemande } from "@/lib/actions/demandes";
 import { idleState } from "@/lib/actions/types";
+import { errorsFor, useActionToast } from "@/lib/actions/form";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { DateTimeField } from "@/components/datetime-field";
 import { SubmitButton } from "@/components/submit-button";
-
-function errorsFor(state: typeof idleState, name: string) {
-  if (state.status !== "error") return undefined;
-  return state.fieldErrors?.[name]?.map((message) => ({ message }));
-}
 
 export function NouvelleDemandeForm({ minDateTime }: { minDateTime: string }) {
   const [state, action] = useActionState(creerDemande, idleState);
-
-  useEffect(() => {
-    if (state.status === "error") toast.error(state.message);
-  }, [state]);
+  useActionToast(state);
 
   return (
     <form action={action} className="flex max-w-xl flex-col gap-6">
       <FieldGroup>
         <Field>
           <FieldLabel htmlFor="dateSouhaitee">Date et heure souhaitées</FieldLabel>
-          <Input
-            id="dateSouhaitee"
-            name="dateSouhaitee"
-            type="datetime-local"
-            min={minDateTime}
-            required
-          />
+          <DateTimeField id="dateSouhaitee" name="dateSouhaitee" min={minDateTime} />
           <FieldError errors={errorsFor(state, "dateSouhaitee")} />
         </Field>
 
