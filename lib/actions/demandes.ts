@@ -1,0 +1,210 @@
+"use server";
+
+import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/dal";
+import { formatDateTime } from "@/lib/datetime";
+import { createVisioRoom, VisioError } from "@/lib/visio";
+import {
+  accepterDemandeSchema,
+  creerDemandeSchema,
+  refuserDemandeSchema,
+} from "@/lib/validation/demandes";
+import type { ActionState } from "@/lib/actions/types";
+
+function fieldErrorsOf(error: { issues: { path: PropertyKey[]; message: string }[] }) {
+  const fieldErrors: Record<string, string[]> = {};
+  for (const issue of error.issues) {
+    const key = String(issue.path[0] ?? "_");
+    (fieldErrors[key] ??= []).push(issue.message);
+  }
+  return fieldErrors;
+}
+
+export async function creerDemande(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const session = await requireRole("astronaut");
+
+  const parsed = creerDemandeSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: "Formulaire invalide",
+      fieldErrors: fieldErrorsOf(parsed.error),
+    };
+  }
+
+  const { dateSouhaitee, commentaire } = parsed.data;
+  const auteur = session.user.name ?? session.user.email ?? "Un astronaute";
+
+  await prisma.$transaction(async (tx) => {
+    const demande = await tx.demandeConsultation.create({
+      data: { astronauteId: session.user.id, dateSouhaitee, commentaire },
+    });
+
+    const medecins = await tx.user.findMany({
+      where: { role: "MEDECIN" },
+      select: { id: true },
+    });
+
+    if (medecins.length > 0) {
+      await tx.notification.createMany({
+        data: medecins.map((m) => ({
+          userId: m.id,
+          type: "NOUVELLE_DEMANDE",
+          titre: "Nouvelle demande de consultation",
+          message: `${auteur} souhaite une consultation le ${formatDateTime(dateSouhaitee)}.`,
+          lienUrl: "/doctor",
+          demandeId: demande.id,
+        })),
+      });
+    }
+  });
+
+  redirect("/astronaut?created=1");
+}
+
+export async function accepterDemande(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const session = await requireRole("doctor");
+
+  const parsed = accepterDemandeSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: "Formulaire invalide",
+      fieldErrors: fieldErrorsOf(parsed.error),
+    };
+  }
+  const { demandeId, dateConsultation } = parsed.data;
+
+  const email =
+    session.user.email ??
+    (
+      await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { email: true },
+      })
+    )?.email;
+  if (!email) {
+    return {
+      status: "error",
+      message: "Votre compte n'a pas d'adresse email, impossible de créer la salle Visio.",
+    };
+  }
+
+  const demande = await prisma.demandeConsultation.findUnique({
+    where: { id: demandeId },
+    select: { statut: true, astronauteId: true },
+  });
+  if (!demande || demande.statut !== "EN_ATTENTE") {
+    return { status: "error", message: "Cette demande a déjà été traitée." };
+  }
+
+  let room: { id: string; url: string };
+  try {
+    room = await createVisioRoom(email);
+  } catch (error) {
+    if (error instanceof VisioError) {
+      return {
+        status: "error",
+        message: "Création de la salle Visio impossible. Réessayez plus tard.",
+      };
+    }
+    throw error;
+  }
+
+  const ok = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.demandeConsultation.updateMany({
+      where: { id: demandeId, statut: "EN_ATTENTE", medecinId: null },
+      data: {
+        statut: "VALIDEE",
+        medecinId: session.user.id,
+        dateConsultation,
+        lienVisio: room.url,
+        visioRoomId: room.id,
+      },
+    });
+    if (count === 0) return false;
+
+    await tx.notification.create({
+      data: {
+        userId: demande.astronauteId,
+        type: "DEMANDE_ACCEPTEE",
+        titre: "Consultation planifiée",
+        message: `Votre consultation est confirmée le ${formatDateTime(dateConsultation)}.`,
+        lienUrl: "/astronaut",
+        demandeId,
+      },
+    });
+    return true;
+  });
+
+  if (!ok) {
+    console.warn("[visio] salle orpheline", room.id);
+    return { status: "error", message: "Cette demande a déjà été traitée par un autre médecin." };
+  }
+
+  refresh();
+  return { status: "success", message: "Consultation planifiée" };
+}
+
+export async function refuserDemande(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const session = await requireRole("doctor");
+
+  const parsed = refuserDemandeSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: "Formulaire invalide",
+      fieldErrors: fieldErrorsOf(parsed.error),
+    };
+  }
+  const { demandeId } = parsed.data;
+  const motifRefus = parsed.data.motifRefus || null;
+
+  const demande = await prisma.demandeConsultation.findUnique({
+    where: { id: demandeId },
+    select: { astronauteId: true },
+  });
+  if (!demande) {
+    return { status: "error", message: "Demande introuvable." };
+  }
+
+  const ok = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.demandeConsultation.updateMany({
+      where: { id: demandeId, statut: "EN_ATTENTE", medecinId: null },
+      data: { statut: "REFUSEE", medecinId: session.user.id, motifRefus },
+    });
+    if (count === 0) return false;
+
+    await tx.notification.create({
+      data: {
+        userId: demande.astronauteId,
+        type: "DEMANDE_REFUSEE",
+        titre: "Demande refusée",
+        message: motifRefus
+          ? `Votre demande de consultation a été refusée : ${motifRefus}`
+          : "Votre demande de consultation a été refusée.",
+        lienUrl: "/astronaut",
+        demandeId,
+      },
+    });
+    return true;
+  });
+
+  if (!ok) {
+    return { status: "error", message: "Cette demande a déjà été traitée." };
+  }
+
+  refresh();
+  return { status: "success", message: "Demande refusée" };
+}
