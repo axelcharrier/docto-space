@@ -7,10 +7,15 @@ services:
     image: ghcr.io/axelcharrier/doctospace-migrate:latest
     env_file: .env
     restart: "no"
+    # MariaDB runs on the host, not in Docker: expose it as host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   app:
     image: ghcr.io/axelcharrier/doctospace:latest
     env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:3000:3000"
     restart: unless-stopped
