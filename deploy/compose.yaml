@@ -1,0 +1,24 @@
+# Reference compose file for the VPS (/srv/docker/doctospace/compose.yaml).
+# Secrets go in a sibling .env (perms 600) — see .env.example next to this
+# file for the full list of variables.
+services:
+  migrate:
+    image: ghcr.io/axelcharrier/doctospace-migrate:latest
+    env_file: .env
+    restart: "no"
+
+  app:
+    image: ghcr.io/axelcharrier/doctospace:latest
+    env_file: .env
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
