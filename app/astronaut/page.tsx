@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   CalendarBlankIcon,
   ClockIcon,
+  PillIcon,
   PlusIcon,
   StethoscopeIcon,
   UserIcon,
@@ -9,6 +10,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { auth } from "@/auth";
 import { listDemandesAstronaute } from "@/lib/data/demandes";
+import { listPrescriptionsAstronaute } from "@/lib/data/prescriptions";
 import { formatDateTime } from "@/lib/datetime";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,12 +23,18 @@ import {
 import { DemandeStatusBadge } from "@/components/demande-status-badge";
 import { MetaLine } from "@/components/meta-line";
 import { PageHeader } from "@/components/page-header";
+import { PrescriptionLignes } from "@/components/prescription-lignes";
 import { SectionTitle } from "@/components/section-title";
 import { ToastOnMount } from "@/components/toast-on-mount";
 
 export default async function AstronautPage({ searchParams }: PageProps<"/astronaut">) {
   const [session, params] = await Promise.all([auth(), searchParams]);
-  const demandes = await listDemandesAstronaute(session!.user.id);
+  // Never trust an id coming from the page: both lists are scoped to the
+  // signed-in astronaut.
+  const [demandes, prescriptions] = await Promise.all([
+    listDemandesAstronaute(session!.user.id),
+    listPrescriptionsAstronaute(session!.user.id),
+  ]);
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-10 px-4 py-8 sm:py-12">
@@ -44,6 +52,51 @@ export default async function AstronautPage({ searchParams }: PageProps<"/astron
           </Button>
         }
       />
+
+      <section className="flex flex-col gap-4">
+        <SectionTitle icon={PillIcon} count={prescriptions.length}>
+          Mes médicaments
+        </SectionTitle>
+
+        {prescriptions.length === 0 ? (
+          <p className="text-muted-foreground">
+            Aucun traitement en cours. Vos médecins verront apparaître ici les médicaments
+            qu&apos;ils vous prescrivent.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {prescriptions.map((p) => (
+              <li key={p.id}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      Prescription du {formatDateTime(p.datePrescription)}
+                    </CardTitle>
+                    <CardDescription className="flex flex-col gap-1">
+                      <MetaLine icon={UserIcon} label="Médecin">
+                        {p.medecin.name ?? p.medecin.email}
+                      </MetaLine>
+                      {p.demande?.dateConsultation && (
+                        <MetaLine icon={CalendarBlankIcon} label="Consultation du">
+                          Suite à la consultation du {formatDateTime(p.demande.dateConsultation)}
+                        </MetaLine>
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    <PrescriptionLignes lignes={p.lignes} />
+                    {p.commentaire && (
+                      <p className="border-t pt-4 whitespace-pre-line text-muted-foreground">
+                        {p.commentaire}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="flex flex-col gap-4">
         <SectionTitle icon={StethoscopeIcon} count={demandes.length}>

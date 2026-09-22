@@ -21,6 +21,8 @@ model User {
 
   demandesEnvoyees  DemandeConsultation[] @relation("DemandesAstronaute")
   demandesRecues    DemandeConsultation[] @relation("DemandesMedecin")
+  prescriptionsRecues   Prescription[] @relation("PrescriptionsAstronaute")
+  prescriptionsEmises   Prescription[] @relation("PrescriptionsMedecin")
   notifications     Notification[]
 }
 
@@ -113,31 +115,73 @@ enum TypeNotification {
   NOUVELLE_DEMANDE
   DEMANDE_ACCEPTEE
   DEMANDE_REFUSEE
+  NOUVELLE_PRESCRIPTION
+  PRESCRIPTION_MODIFIEE
+  PRESCRIPTION_SUPPRIMEE
 }
 
 model Prescription {
   id               String   @id @default(uuid())
-  demande          DemandeConsultation @relation(fields: [demandeId], references: [id])
-  demandeId        String
+  // L'astronaute est porté par la prescription elle-même, pas déduit de la
+  // demande : c'est ce qui permet de prescrire hors consultation, et c'est
+  // le seul filtre d'isolation entre astronautes (lib/data/prescriptions.ts).
+  astronaute       User     @relation("PrescriptionsAstronaute", fields: [astronauteId], references: [id])
+  astronauteId     String
+  medecin          User     @relation("PrescriptionsMedecin", fields: [medecinId], references: [id])
+  medecinId        String
+  // null quand le médecin prescrit sans passer par un rendez-vous
+  demande          DemandeConsultation? @relation(fields: [demandeId], references: [id], onDelete: SetNull)
+  demandeId        String?
+  // consigne générale, en complément de la posologie de chaque ligne
+  commentaire      String?  @db.Text
   datePrescription DateTime @default(now())
+  updatedAt        DateTime @updatedAt
   lignes           LignePrescription[]
+
+  @@index([astronauteId])
+  @@index([medecinId])
 }
 
+// Référentiel officiel des médicaments (base publique des médicaments,
+// ANSM/data.gouv). Alimenté par prisma/seed.ts depuis
+// prisma/data/medicaments-bdpm.tsv : jamais écrit par l'application, le
+// médecin ne peut que choisir dedans — d'où l'impossibilité de se tromper
+// dans l'orthographe.
 model Medicament {
-  id             String   @id @default(uuid())
-  nom            String
-  dosageUnitaire String
-  lignes         LignePrescription[]
+  // Code CIS : identifiant officiel de la spécialité, sert de clé primaire
+  // pour que le référentiel puisse être ré-importé sans casser les liens.
+  codeCis             String   @id
+  // "DOLIPRANE 500 mg, comprimé" — le dosage fait partie du nom officiel.
+  denomination        String
+  formePharmaceutique String
+  lignes              LignePrescription[]
+
+  @@index([denomination])
 }
 
 model LignePrescription {
   id             String   @id @default(uuid())
-  prescription   Prescription @relation(fields: [prescriptionId], references: [id])
+  // Cascade : modifier une prescription remplace ses lignes, la supprimer
+  // les emporte.
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
   prescriptionId String
-  medicament     Medicament @relation(fields: [medicamentId], references: [id])
+  medicament     Medicament @relation(fields: [medicamentId], references: [codeCis])
   medicamentId   String
-  posologie      String
-  prises         PrisePlanifiee[]
+  // Quantité par prise ("1 comprimé", "2 gouttes") : le dosage de la
+  // spécialité est déjà dans `medicament.denomination`.
+  quantite       String?
+  // Texte lisible généré à l'enregistrement (formatPosologie), affiché tel
+  // quel à l'astronaute.
+  posologie        String
+  // Champs structurés d'origine, conservés pour pouvoir ré-éditer la ligne
+  // sans avoir à re-parser `posologie`.
+  moments          String?  @db.Text
+  intervalleHeures Int?
+  dureeJours       Int?
+  instructions     String?
+  prises           PrisePlanifiee[]
+
+  @@index([prescriptionId])
 }
 
 model PrisePlanifiee {
