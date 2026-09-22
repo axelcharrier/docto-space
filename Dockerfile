@@ -27,7 +27,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
     && rm -rf /var/lib/apt/lists/*
 COPY prisma ./prisma
 COPY prisma.config.ts ./
-CMD ["pnpm", "exec", "prisma", "migrate", "deploy"]
+# `db seed` runs prisma/seed.ts (see prisma.config.ts): it fills the official
+# medicine catalogue from the file committed under prisma/data. Idempotent,
+# so re-running it on every deploy is a no-op once the catalogue is loaded.
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm exec prisma db seed"]
 
 # ---- runner: custom server (Next.js + WebSocket, see server.mjs) ----
 # Not `output: "standalone"`: Next can't trace a custom server, so we ship
