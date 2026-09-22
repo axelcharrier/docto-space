@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { requireRole } from "@/lib/dal";
-import { LogoutButton } from "@/components/logout-button";
-import { NotificationBell } from "@/components/notification-bell";
+import { AppHeader } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 
 export default async function DoctorLayout({
@@ -15,15 +13,7 @@ export default async function DoctorLayout({
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between border-b p-4">
-        <Link href="/doctor" className="font-semibold">
-          docto-space · Médecin
-        </Link>
-        <div className="flex items-center gap-2">
-          <NotificationBell href="/doctor/notifications" />
-          <LogoutButton />
-        </div>
-      </header>
+      <AppHeader section="Médecin" href="/doctor" />
       <AutoRefresh />
       {children}
     </div>
