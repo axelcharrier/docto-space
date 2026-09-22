@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
 import { formatDateTime } from "@/lib/datetime";
 import { createVisioRoom, VisioError } from "@/lib/visio";
+import { notifyUsers } from "@/lib/events";
 import {
   accepterDemandeSchema,
   creerDemandeSchema,
@@ -20,6 +21,16 @@ function fieldErrorsOf(error: { issues: { path: PropertyKey[]; message: string }
     (fieldErrors[key] ??= []).push(issue.message);
   }
   return fieldErrors;
+}
+
+// Every doctor's dashboard lists the pending requests, so any change to one
+// is relevant to all of them (plus, when given, the astronaut who owns it).
+async function notifyMedecinsEt(...userIds: string[]) {
+  const medecins = await prisma.user.findMany({
+    where: { role: "MEDECIN" },
+    select: { id: true },
+  });
+  notifyUsers([...medecins.map((m) => m.id), ...userIds]);
 }
 
 export async function creerDemande(
@@ -40,7 +51,7 @@ export async function creerDemande(
   const { dateSouhaitee, commentaire } = parsed.data;
   const auteur = session.user.name ?? session.user.email ?? "Un astronaute";
 
-  await prisma.$transaction(async (tx) => {
+  const medecinIds = await prisma.$transaction(async (tx) => {
     const demande = await tx.demandeConsultation.create({
       data: { astronauteId: session.user.id, dateSouhaitee, commentaire },
     });
@@ -62,8 +73,11 @@ export async function creerDemande(
         })),
       });
     }
+
+    return medecins.map((m) => m.id);
   });
 
+  notifyUsers(medecinIds);
   redirect("/astronaut?created=1");
 }
 
@@ -150,6 +164,7 @@ export async function accepterDemande(
     return { status: "error", message: "Cette demande a déjà été traitée par un autre médecin." };
   }
 
+  await notifyMedecinsEt(demande.astronauteId);
   refresh();
   return { status: "success", message: "Consultation planifiée" };
 }
@@ -205,6 +220,7 @@ export async function refuserDemande(
     return { status: "error", message: "Cette demande a déjà été traitée." };
   }
 
+  await notifyMedecinsEt(demande.astronauteId);
   refresh();
   return { status: "success", message: "Demande refusée" };
 }

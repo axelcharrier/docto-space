@@ -7,7 +7,7 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# ---- builder: prisma generate + next build (standalone) ----
+# ---- builder: prisma generate + next build ----
 FROM deps AS builder
 COPY . .
 # Placeholders only: lib/prisma.ts instantiates the MariaDB adapter at import
@@ -17,6 +17,9 @@ ENV DATABASE_URL=mysql://build:build@127.0.0.1:3306/build \
     AUTH_TRUST_HOST=true \
     NEXT_TELEMETRY_DISABLED=1
 RUN pnpm exec prisma generate && pnpm build
+# Drop dev dependencies for the runner. The generated Prisma client lives
+# inside the @prisma/client package (a prod dep), so it survives the prune.
+RUN pnpm prune --prod
 
 # ---- migrate: one-shot container running `prisma migrate deploy` ----
 FROM deps AS migrate
@@ -26,7 +29,9 @@ COPY prisma ./prisma
 COPY prisma.config.ts ./
 CMD ["pnpm", "exec", "prisma", "migrate", "deploy"]
 
-# ---- runner: minimal Next.js standalone server ----
+# ---- runner: custom server (Next.js + WebSocket, see server.mjs) ----
+# Not `output: "standalone"`: Next can't trace a custom server, so we ship
+# the built .next dir plus the pruned node_modules instead.
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
@@ -35,9 +40,11 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0
 RUN groupadd --system --gid 1001 nodejs \
     && useradd --system --uid 1001 --gid nodejs nextjs
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/next.config.ts /app/server.mjs ./
 USER nextjs
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["node", "server.mjs"]
