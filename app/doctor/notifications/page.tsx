@@ -7,7 +7,7 @@ export default async function DoctorNotificationsPage() {
   const notifications = await listNotifications(session!.user.id);
 
   return (
-    <main className="flex flex-1 flex-col gap-6 p-8 sm:p-16">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:py-12">
       <NotificationsList notifications={notifications} backHref="/doctor" />
     </main>
   );
