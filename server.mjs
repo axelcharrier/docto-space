@@ -15,7 +15,14 @@ import { getToken } from "next-auth/jwt";
 
 const dev = process.env.NODE_ENV !== "production";
 const port = parseInt(process.env.PORT ?? "3000", 10);
-const hostname = process.env.HOSTNAME ?? "0.0.0.0";
+// Interface to bind: 0.0.0.0 so the container (and the LAN in dev) can reach us.
+const listenHost = process.env.HOSTNAME ?? "0.0.0.0";
+// What Next reports as the app's hostname. It ends up in the absolute URLs
+// Next builds, which Auth.js uses to derive `redirect_uri` — and 0.0.0.0 is
+// a bind address, not a routable name, so OIDC would reject it. In
+// production AUTH_URL wins over this anyway.
+const hostname =
+  listenHost === "0.0.0.0" || listenHost === "::" ? "localhost" : listenHost;
 // Must match LIVE_LISTENERS_KEY in lib/events.ts.
 const LIVE_LISTENERS_KEY = "__liveListeners";
 // Detects dead connections (laptop closed, network dropped) that never sent
@@ -110,6 +117,6 @@ server.on("upgrade", async (req, socket, head) => {
   });
 });
 
-server.listen(port, hostname, () => {
+server.listen(port, listenHost, () => {
   console.log(`> Ready on http://${hostname}:${port} (${dev ? "dev" : "production"})`);
 });

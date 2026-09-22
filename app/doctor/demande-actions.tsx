@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useActionState, useState } from "react";
 import { accepterDemande, refuserDemande } from "@/lib/actions/demandes";
-import { idleState, type ActionState } from "@/lib/actions/types";
+import { idleState } from "@/lib/actions/types";
+import { errorsFor, useActionToast } from "@/lib/actions/form";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,8 +15,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { DateTimeField } from "@/components/datetime-field";
 import { SubmitButton } from "@/components/submit-button";
 
 type Props = {
@@ -24,23 +24,6 @@ type Props = {
   dateSouhaiteeInput: string;
   minDateTime: string;
 };
-
-function useActionToast(state: ActionState, onSuccess: () => void) {
-  useEffect(() => {
-    if (state.status === "success") {
-      toast.success(state.message ?? "Enregistré");
-      onSuccess();
-    } else if (state.status === "error") {
-      toast.error(state.message);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
-}
-
-function errorsFor(state: ActionState, name: string) {
-  if (state.status !== "error") return undefined;
-  return state.fieldErrors?.[name]?.map((message) => ({ message }));
-}
 
 function AccepterDialog({ demandeId, dateSouhaiteeInput, minDateTime }: Props) {
   const [open, setOpen] = useState(false);
@@ -62,13 +45,11 @@ function AccepterDialog({ demandeId, dateSouhaiteeInput, minDateTime }: Props) {
           <input type="hidden" name="demandeId" value={demandeId} />
           <Field>
             <FieldLabel htmlFor={`dateConsultation-${demandeId}`}>Date et heure</FieldLabel>
-            <Input
+            <DateTimeField
               id={`dateConsultation-${demandeId}`}
               name="dateConsultation"
-              type="datetime-local"
               defaultValue={dateSouhaiteeInput}
               min={minDateTime}
-              required
             />
             <FieldError errors={errorsFor(state, "dateConsultation")} />
           </Field>

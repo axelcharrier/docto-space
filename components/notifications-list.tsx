@@ -1,25 +1,53 @@
+import Link from "next/link";
+import { BellIcon, XIcon } from "@phosphor-icons/react/dist/ssr";
 import type { Notification } from "@prisma/client";
 import { marquerLue, marquerToutesLues } from "@/lib/actions/notifications";
 import { formatDateTime } from "@/lib/datetime";
 import { Button } from "@/components/ui/button";
+import { SectionTitle } from "@/components/section-title";
 import { cn } from "@/lib/utils";
 
-export function NotificationsList({ notifications }: { notifications: Notification[] }) {
+// `backHref` is where the close button returns to — the section's home page,
+// since notifications are a full page here rather than a dropdown.
+export function NotificationsList({
+  notifications,
+  backHref,
+}: {
+  notifications: Notification[];
+  backHref: string;
+}) {
   const unread = notifications.filter((n) => !n.lue).length;
 
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">
-          Notifications {unread > 0 && `(${unread} non lue${unread > 1 ? "s" : ""})`}
-        </h2>
-        {unread > 0 && (
-          <form action={marquerToutesLues}>
-            <Button type="submit" variant="outline" size="sm">
-              Tout marquer comme lu
-            </Button>
-          </form>
-        )}
+        <SectionTitle icon={BellIcon}>
+          Notifications
+          {unread > 0 && (
+            <span className="text-sm font-normal text-muted-foreground">
+              {unread} non lue{unread > 1 ? "s" : ""}
+            </span>
+          )}
+        </SectionTitle>
+        <div className="flex items-center gap-2">
+          {unread > 0 && (
+            <form action={marquerToutesLues}>
+              <Button type="submit" variant="outline" size="sm">
+                Tout marquer comme lu
+              </Button>
+            </form>
+          )}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            nativeButton={false}
+            aria-label="Fermer les notifications"
+            title="Fermer"
+            render={<Link href={backHref} />}
+          >
+            <XIcon />
+          </Button>
+        </div>
       </div>
 
       {notifications.length === 0 ? (
@@ -33,13 +61,15 @@ export function NotificationsList({ notifications }: { notifications: Notificati
                 <button
                   type="submit"
                   className={cn(
-                    "flex w-full flex-col gap-1 border p-4 text-left transition-colors hover:bg-muted",
-                    n.lue ? "border-border text-muted-foreground" : "border-primary bg-card",
+                    "flex w-full flex-col gap-1.5 border p-4 text-left transition-colors hover:bg-muted",
+                    n.lue
+                      ? "border-border text-muted-foreground"
+                      : "border-l-4 border-primary bg-card",
                   )}
                 >
                   <span className="flex items-baseline justify-between gap-2">
                     <span className="font-medium">{n.titre}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {formatDateTime(n.createdAt)}
                     </span>
                   </span>

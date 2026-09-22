@@ -14,7 +14,13 @@ import { signOut } from "@/auth";
 export async function logout() {
   const requestHeaders = await headers();
   const host = requestHeaders.get("host");
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
+  // Behind the VPS's nginx the scheme only survives in x-forwarded-proto.
+  // Without that header, fall back to AUTH_URL (set in production) and
+  // finally to http — guessing https in local dev broke both the cookie
+  // name below and post_logout_redirect_uri.
+  const protocol =
+    requestHeaders.get("x-forwarded-proto") ??
+    (process.env.AUTH_URL ? new URL(process.env.AUTH_URL).protocol.replace(":", "") : "http");
 
   const token = await getToken({
     req: { headers: requestHeaders },

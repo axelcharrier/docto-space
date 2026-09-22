@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { requireRole } from "@/lib/dal";
-import { LogoutButton } from "@/components/logout-button";
-import { NotificationBell } from "@/components/notification-bell";
+import { AppHeader } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 
 export default async function AstronautLayout({
@@ -15,15 +13,7 @@ export default async function AstronautLayout({
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between border-b p-4">
-        <Link href="/astronaut" className="font-semibold">
-          docto-space · Astronaute
-        </Link>
-        <div className="flex items-center gap-2">
-          <NotificationBell href="/astronaut/notifications" />
-          <LogoutButton />
-        </div>
-      </header>
+      <AppHeader section="Astronaute" href="/astronaut" />
       <AutoRefresh />
       {children}
     </div>
