@@ -7,6 +7,7 @@ type Prise = {
   prescriptionId: string;
   medecinId: string;
   medicamentId: string;
+  quantite: number;
   dateHeurePrevue: Date;
 };
 
@@ -30,7 +31,13 @@ async function prisesDues(
       medecinId: true,
       datePrescription: true,
       lignes: {
-        select: { medicamentId: true, moments: true, intervalleHeures: true, dureeJours: true },
+        select: {
+          medicamentId: true,
+          quantite: true,
+          moments: true,
+          intervalleHeures: true,
+          dureeJours: true,
+        },
       },
       prises: {
         where: { dateHeurePrevue: { gte: new Date(now.getTime() - HISTORIQUE_UTILE_MS) } },
@@ -60,6 +67,7 @@ async function prisesDues(
         prescriptionId: prescription.id,
         medecinId: prescription.medecinId,
         medicamentId: ligne.medicamentId,
+        quantite: ligne.quantite,
         dateHeurePrevue: prochaine.date,
       });
     }
@@ -77,8 +85,8 @@ export function findAstronauteByRfid(rfidUid: string) {
 
 // Decides what the dispenser may release now and records it as taken in
 // the same transaction, so a second scan gets nothing for the same slot.
-// Returns the CIS codes of the medicines to dispense, and the prescribing
-// doctors so their open pages can be refreshed.
+// Returns the medicines to dispense (CIS code and units per dose), and the
+// prescribing doctors so their open pages can be refreshed.
 export async function dispenserPrises(astronauteId: string, now = new Date()) {
   return prisma.$transaction(async (tx) => {
     // Serializes scans of the same astronaut: interval doses have no fixed
@@ -99,7 +107,7 @@ export async function dispenserPrises(astronauteId: string, now = new Date()) {
     }
 
     return {
-      medicaments: dues.map((prise) => prise.medicamentId),
+      medicaments: dues.map((prise) => ({ id: prise.medicamentId, quantite: prise.quantite })),
       medecinIds: dues.map((prise) => prise.medecinId),
     };
   });
