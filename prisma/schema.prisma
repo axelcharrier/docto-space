@@ -15,6 +15,10 @@ model User {
   image         String?
   role          Role      @default(ASTRONAUTE)
   specialite    String?   // renseigné uniquement si role = MEDECIN
+  // UID de la carte NFC lue par le distributeur (ESP32), en hexadécimal
+  // majuscule sans séparateur. Astronautes uniquement, renseigné à la main
+  // pour le prototype.
+  rfidUid       String?   @unique
 
   accounts      Account[]
   sessions      Session[]
