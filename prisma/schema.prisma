@@ -173,9 +173,10 @@ model LignePrescription {
   prescriptionId String
   medicament     Medicament @relation(fields: [medicamentId], references: [codeCis])
   medicamentId   String
-  // Quantité par prise ("1 comprimé", "2 gouttes") : le dosage de la
-  // spécialité est déjà dans `medicament.denomination`.
-  quantite       String?
+  // Nombre d'unités par prise (comprimés, gélules…), lu par le distributeur
+  // pour savoir combien en libérer. L'unité et le dosage sont déjà dans
+  // `medicament.denomination`.
+  quantite       Int      @default(1)
   // Texte lisible généré à l'enregistrement (formatPosologie), affiché tel
   // quel à l'astronaute.
   posologie        String

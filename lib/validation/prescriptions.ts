@@ -15,7 +15,8 @@ export const ligneSchema = z
     // Code CIS : le médicament est choisi dans le référentiel officiel, il
     // n'est jamais saisi au clavier (voir prisma/seed.ts).
     codeCis: z.string().trim().min(1, "Choisissez un médicament"),
-    quantite: z.string().trim().max(60, "60 caractères maximum").optional(),
+    // Units per dose, released one by one by the dispenser.
+    quantite: z.number().int().min(1, "Au moins 1").max(10, "10 maximum"),
     mode: z.enum(["MOMENTS", "INTERVALLE"]),
     moments: z.array(z.enum(MOMENTS)).default([]),
     intervalleHeures: z.number().int().min(1).max(24).nullable().default(null),
@@ -83,12 +84,11 @@ export const supprimerPrescriptionSchema = z.object({
 export function formatPosologie(ligne: LigneInput) {
   const rythme =
     ligne.mode === "INTERVALLE"
-      ? `Toutes les ${ligne.intervalleHeures} h`
-      : capitalize(joinFr(ligne.moments.map((moment) => MOMENT_LABELS[moment])));
+      ? `toutes les ${ligne.intervalleHeures} h`
+      : joinFr(ligne.moments.map((moment) => MOMENT_LABELS[moment]));
 
   const duree = `pendant ${ligne.dureeJours} jour${ligne.dureeJours > 1 ? "s" : ""}`;
-  const quantite = ligne.quantite ? `${ligne.quantite}, ` : "";
-  const phrase = `${quantite}${quantite ? decapitalize(rythme) : rythme} ${duree}`;
+  const phrase = `${ligne.quantite} × ${rythme} ${duree}`;
 
   return ligne.instructions ? `${phrase} · ${ligne.instructions}` : phrase;
 }
@@ -96,12 +96,4 @@ export function formatPosologie(ligne: LigneInput) {
 function joinFr(parts: string[]) {
   if (parts.length <= 1) return parts.join("");
   return `${parts.slice(0, -1).join(", ")} et ${parts.at(-1)}`;
-}
-
-function capitalize(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function decapitalize(value: string) {
-  return value.charAt(0).toLowerCase() + value.slice(1);
 }
