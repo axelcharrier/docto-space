@@ -57,7 +57,7 @@ function ligneVide(): LigneForm {
   return {
     codeCis: "",
     medicament: null,
-    quantite: "",
+    quantite: 1,
     mode: "MOMENTS",
     moments: ["MATIN"],
     intervalleHeures: null,
@@ -72,7 +72,7 @@ function lignesDe(prescription: PrescriptionMedecin): LigneForm[] {
   return prescription.lignes.map((ligne) => ({
     codeCis: ligne.medicament.codeCis,
     medicament: ligne.medicament,
-    quantite: ligne.quantite ?? "",
+    quantite: ligne.quantite,
     mode: ligne.intervalleHeures !== null ? "INTERVALLE" : "MOMENTS",
     moments: (JSON.parse(ligne.moments ?? "[]") as Moment[]) ?? [],
     intervalleHeures: ligne.intervalleHeures,
@@ -335,9 +335,11 @@ function LigneFields({
           <FieldLabel htmlFor={`quantite-${index}`}>Quantité par prise</FieldLabel>
           <Input
             id={`quantite-${index}`}
-            value={ligne.quantite ?? ""}
-            onChange={(e) => onChange({ quantite: e.target.value })}
-            placeholder="1 comprimé"
+            type="number"
+            min={1}
+            max={10}
+            value={ligne.quantite}
+            onChange={(e) => onChange({ quantite: Number(e.target.value) })}
           />
           <FieldError errors={erreurs("quantite")} />
         </Field>

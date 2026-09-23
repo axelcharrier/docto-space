@@ -1,23 +1,50 @@
-import { CheckCircleIcon, PillIcon } from "@phosphor-icons/react/dist/ssr";
-import { formatHeure } from "@/lib/datetime";
+import { CheckCircleIcon, ClockIcon, PillIcon } from "@phosphor-icons/react/dist/ssr";
+import { debutJourLocal, formatHeure, formatJourHeure } from "@/lib/datetime";
+import { FENETRE_MS, prochainePrise } from "@/lib/prises";
 
 type Ligne = {
   id: string;
   medicamentId: string;
   posologie: string;
+  moments: string | null;
+  intervalleHeures: number | null;
+  dureeJours: number | null;
   medicament: { denomination: string; formePharmaceutique: string };
 };
 
-type Prise = { medicamentId: string; datePrise: Date | null };
+type Prise = { medicamentId: string; dateHeurePrevue: Date; datePrise: Date | null };
+
+function libelleProchaine(ligne: Ligne, datePrescription: Date, prises: Prise[], now: Date) {
+  const prochaine = prochainePrise(ligne, datePrescription, prises, now);
+  if (!prochaine) return "Traitement terminé";
+  if (!prochaine.maintenant) return `Prochaine prise ${formatJourHeure(prochaine.date, now)}`;
+  // A moment of the day stays available until the end of its window.
+  return ligne.intervalleHeures
+    ? "À prendre maintenant"
+    : `À prendre maintenant, jusqu'à ${formatHeure(new Date(prochaine.date.getTime() + FENETRE_MS))}`;
+}
 
 // The medicine list of a prescription, rendered the same way for the doctor
-// and the astronaut. `prises` are today's doses released by the dispenser.
-export function PrescriptionLignes({ lignes, prises = [] }: { lignes: Ligne[]; prises?: Prise[] }) {
+// and the astronaut. `prises` are the recent doses released by the
+// dispenser: today's are listed, and they decide the next one.
+export function PrescriptionLignes({
+  lignes,
+  datePrescription,
+  prises = [],
+}: {
+  lignes: Ligne[];
+  datePrescription: Date;
+  prises?: Prise[];
+}) {
+  const now = new Date();
+  const debutJour = debutJourLocal(now);
+
   return (
     <ul className="flex flex-col gap-3">
       {lignes.map((ligne) => {
-        const heures = prises
-          .filter((prise) => prise.medicamentId === ligne.medicamentId && prise.datePrise)
+        const prisesLigne = prises.filter((prise) => prise.medicamentId === ligne.medicamentId);
+        const heures = prisesLigne
+          .filter((prise) => prise.datePrise && prise.datePrise >= debutJour)
           .map((prise) => formatHeure(prise.datePrise!));
 
         return (
@@ -32,6 +59,10 @@ export function PrescriptionLignes({ lignes, prises = [] }: { lignes: Ligne[]; p
                   Pris aujourd&apos;hui à {heures.join(" · ")}
                 </p>
               )}
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                <ClockIcon className="size-4 shrink-0" aria-hidden />
+                {libelleProchaine(ligne, datePrescription, prisesLigne, now)}
+              </p>
             </div>
           </li>
         );

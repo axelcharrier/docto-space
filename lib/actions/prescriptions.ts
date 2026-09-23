@@ -29,7 +29,7 @@ function fieldErrorsOf(error: { issues: { path: PropertyKey[]; message: string }
 function lignesData(lignes: LigneInput[]) {
   return lignes.map((ligne) => ({
     medicamentId: ligne.codeCis,
-    quantite: ligne.quantite || null,
+    quantite: ligne.quantite,
     posologie: formatPosologie(ligne),
     moments: JSON.stringify(ligne.moments),
     intervalleHeures: ligne.intervalleHeures,

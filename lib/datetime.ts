@@ -67,3 +67,20 @@ export function debutJourLocal(date: Date) {
 export function formatHeure(date: Date) {
   return date.toLocaleTimeString("fr-FR", { timeZone: APP_TIMEZONE, timeStyle: "short" });
 }
+
+// "aujourd'hui à 12:00", "demain à 08:00", "jeudi 24 septembre à 08:00".
+export function formatJourHeure(date: Date, now: Date) {
+  const jour = (d: Date) => toLocalInputValue(d).slice(0, 10);
+  const demain = new Date(debutJourLocal(now).getTime() + 36 * 60 * 60 * 1000);
+  const heure = formatHeure(date);
+
+  if (jour(date) === jour(now)) return `aujourd'hui à ${heure}`;
+  if (jour(date) === jour(demain)) return `demain à ${heure}`;
+  const libelleJour = date.toLocaleDateString("fr-FR", {
+    timeZone: APP_TIMEZONE,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  return `${libelleJour} à ${heure}`;
+}

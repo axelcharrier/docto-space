@@ -1,36 +1,15 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import { parseLocalDateTime, toLocalInputValue } from "@/lib/datetime";
-import type { Moment } from "@/lib/validation/prescriptions";
-
-// Wall-clock hour (APP_TIMEZONE) of each moment of the day, and how far
-// from it the dispenser still accepts the dose.
-const HEURE_MOMENT: Record<Moment, number> = {
-  MATIN: 8,
-  MIDI: 12,
-  SOIR: 19,
-  COUCHER: 22,
-};
-const HEURE_MS = 60 * 60 * 1000;
-const JOUR_MS = 24 * HEURE_MS;
-const FENETRE_MS = HEURE_MS;
+import { HISTORIQUE_UTILE_MS, prochainePrise } from "@/lib/prises";
 
 type Prise = {
   prescriptionId: string;
   medecinId: string;
   medicamentId: string;
+  quantite: number;
   dateHeurePrevue: Date;
 };
-
-// Start of the moment's slot today, if `now` falls within its window.
-function creneauEnCours(moment: Moment, now: Date) {
-  const jour = toLocalInputValue(now).slice(0, 10);
-  const heure = String(HEURE_MOMENT[moment]).padStart(2, "0");
-  const debut = parseLocalDateTime(`${jour}T${heure}:00`);
-  if (!debut) return null;
-  return Math.abs(now.getTime() - debut.getTime()) <= FENETRE_MS ? debut : null;
-}
 
 // Doses due right now for this astronaut, and not dispensed yet. Called
 // inside the transaction of dispenserPrises() so the check and the write
@@ -43,15 +22,26 @@ async function prisesDues(
   // Only prescriptions that can still be running: the longest line is at
   // most 365 days (lib/validation/prescriptions.ts).
   const prescriptions = await tx.prescription.findMany({
-    where: { astronauteId, datePrescription: { gt: new Date(now.getTime() - 365 * JOUR_MS) } },
+    where: {
+      astronauteId,
+      datePrescription: { gt: new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000) },
+    },
     select: {
       id: true,
       medecinId: true,
       datePrescription: true,
-      lignes: { select: { medicamentId: true, moments: true, intervalleHeures: true, dureeJours: true } },
+      lignes: {
+        select: {
+          medicamentId: true,
+          quantite: true,
+          moments: true,
+          intervalleHeures: true,
+          dureeJours: true,
+        },
+      },
       prises: {
+        where: { dateHeurePrevue: { gte: new Date(now.getTime() - HISTORIQUE_UTILE_MS) } },
         select: { medicamentId: true, dateHeurePrevue: true },
-        orderBy: { dateHeurePrevue: "desc" },
       },
     },
   });
@@ -59,42 +49,27 @@ async function prisesDues(
   const dues: Prise[] = [];
 
   for (const prescription of prescriptions) {
-    const debut = prescription.datePrescription.getTime();
-
     for (const ligne of prescription.lignes) {
-      const fin = debut + (ligne.dureeJours ?? 0) * JOUR_MS;
-      if (now.getTime() < debut || now.getTime() >= fin) continue;
+      const prises = prescription.prises.filter((p) => p.medicamentId === ligne.medicamentId);
+      const prochaine = prochainePrise(ligne, prescription.datePrescription, prises, now);
+      if (!prochaine?.maintenant) continue;
 
-      const dejaPrises = prescription.prises.filter((p) => p.medicamentId === ligne.medicamentId);
-      const base = {
+      // Two lines of the same medicine on one prescription share a slot.
+      const doublon = dues.some(
+        (p) =>
+          p.prescriptionId === prescription.id &&
+          p.medicamentId === ligne.medicamentId &&
+          p.dateHeurePrevue.getTime() === prochaine.date.getTime(),
+      );
+      if (doublon) continue;
+
+      dues.push({
         prescriptionId: prescription.id,
         medecinId: prescription.medecinId,
         medicamentId: ligne.medicamentId,
-      };
-
-      if (ligne.intervalleHeures) {
-        const derniere = dejaPrises[0]?.dateHeurePrevue.getTime();
-        if (derniere === undefined || now.getTime() >= derniere + ligne.intervalleHeures * HEURE_MS) {
-          dues.push({ ...base, dateHeurePrevue: now });
-        }
-        continue;
-      }
-
-      const moments = JSON.parse(ligne.moments ?? "[]") as Moment[];
-      for (const moment of moments) {
-        const creneau = creneauEnCours(moment, now);
-        if (!creneau) continue;
-        const dejaDistribue = dejaPrises.some(
-          (p) => p.dateHeurePrevue.getTime() === creneau.getTime(),
-        );
-        const dejaDu = dues.some(
-          (p) =>
-            p.prescriptionId === base.prescriptionId &&
-            p.medicamentId === base.medicamentId &&
-            p.dateHeurePrevue.getTime() === creneau.getTime(),
-        );
-        if (!dejaDistribue && !dejaDu) dues.push({ ...base, dateHeurePrevue: creneau });
-      }
+        quantite: ligne.quantite,
+        dateHeurePrevue: prochaine.date,
+      });
     }
   }
 
@@ -110,8 +85,8 @@ export function findAstronauteByRfid(rfidUid: string) {
 
 // Decides what the dispenser may release now and records it as taken in
 // the same transaction, so a second scan gets nothing for the same slot.
-// Returns the CIS codes of the medicines to dispense, and the prescribing
-// doctors so their open pages can be refreshed.
+// Returns the medicines to dispense (CIS code and units per dose), and the
+// prescribing doctors so their open pages can be refreshed.
 export async function dispenserPrises(astronauteId: string, now = new Date()) {
   return prisma.$transaction(async (tx) => {
     // Serializes scans of the same astronaut: interval doses have no fixed
@@ -132,7 +107,7 @@ export async function dispenserPrises(astronauteId: string, now = new Date()) {
     }
 
     return {
-      medicaments: dues.map((prise) => prise.medicamentId),
+      medicaments: dues.map((prise) => ({ id: prise.medicamentId, quantite: prise.quantite })),
       medecinIds: dues.map((prise) => prise.medecinId),
     };
   });

@@ -17,8 +17,9 @@ function cleValide(request: Request) {
 }
 
 // Body: { "uid": "3918B9E3" }
-// Reply: { "autorise": true, "medicaments": [60234100] }. The ESP32 picks
-// the motor from each CIS code, sent as an integer (8 digits, fits int32).
+// Reply: { "autorise": true, "medicaments": [{ "id": 60234100, "quantite": 2 }] }.
+// The ESP32 picks the motor from each CIS code, sent as an integer (8
+// digits, fits int32), and releases `quantite` units.
 export async function POST(request: Request) {
   if (!cleValide(request)) {
     return Response.json({ erreur: "Clé invalide" }, { status: 401 });
@@ -40,5 +41,8 @@ export async function POST(request: Request) {
     notifyUsers([astronaute.id, ...medecinIds]);
   }
 
-  return Response.json({ autorise: medicaments.length > 0, medicaments: medicaments.map(Number) });
+  return Response.json({
+    autorise: medicaments.length > 0,
+    medicaments: medicaments.map((m) => ({ id: Number(m.id), quantite: m.quantite })),
+  });
 }
