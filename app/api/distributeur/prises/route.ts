@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { dispenserPrises, findAstronauteByRfid } from "@/lib/data/distributeur";
+import { notifyUsers } from "@/lib/events";
 import { scanSchema } from "@/lib/validation/distributeur";
 
 // Called by the ESP32 dispenser when a card is scanned. The device has no
@@ -33,6 +34,11 @@ export async function POST(request: Request) {
     return Response.json({ erreur: "Carte inconnue" }, { status: 404 });
   }
 
-  const medicaments = (await dispenserPrises(astronaute.id)).map(Number);
-  return Response.json({ autorise: medicaments.length > 0, medicaments });
+  const { medicaments, medecinIds } = await dispenserPrises(astronaute.id);
+  if (medicaments.length > 0) {
+    // Live update of the "taken today" lines on both sides.
+    notifyUsers([astronaute.id, ...medecinIds]);
+  }
+
+  return Response.json({ autorise: medicaments.length > 0, medicaments: medicaments.map(Number) });
 }

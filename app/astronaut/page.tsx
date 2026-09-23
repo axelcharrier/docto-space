@@ -84,7 +84,7 @@ export default async function AstronautPage({ searchParams }: PageProps<"/astron
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-4">
-                    <PrescriptionLignes lignes={p.lignes} />
+                    <PrescriptionLignes lignes={p.lignes} prises={p.prises} />
                     {p.commentaire && (
                       <p className="border-t pt-4 whitespace-pre-line text-muted-foreground">
                         {p.commentaire}
