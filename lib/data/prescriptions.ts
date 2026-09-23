@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { debutJourLocal } from "@/lib/datetime";
 
 const LIGNES_INCLUDE = {
   lignes: {
@@ -11,6 +12,18 @@ const LIGNES_INCLUDE = {
   },
 } as const;
 
+// Doses the dispenser released today (lib/data/distributeur.ts), shown
+// under each medicine so the doctor and the astronaut can follow the day.
+function prisesDuJour() {
+  return {
+    prises: {
+      where: { datePrise: { gte: debutJourLocal(new Date()) } },
+      select: { medicamentId: true, datePrise: true },
+      orderBy: { datePrise: "asc" },
+    },
+  } as const;
+}
+
 // The one place astronauts are isolated from each other: always filter on the
 // session's own id, never on an id coming from the client.
 export function listPrescriptionsAstronaute(astronauteId: string) {
@@ -18,6 +31,7 @@ export function listPrescriptionsAstronaute(astronauteId: string) {
     where: { astronauteId },
     include: {
       ...LIGNES_INCLUDE,
+      ...prisesDuJour(),
       medecin: { select: { name: true, email: true } },
       demande: { select: { dateConsultation: true } },
     },
@@ -30,6 +44,7 @@ export function listPrescriptionsMedecin(medecinId: string) {
     where: { medecinId },
     include: {
       ...LIGNES_INCLUDE,
+      ...prisesDuJour(),
       astronaute: { select: { id: true, name: true, email: true } },
       demande: { select: { dateConsultation: true } },
     },

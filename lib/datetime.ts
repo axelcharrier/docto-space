@@ -58,3 +58,12 @@ export function formatDateTime(date: Date) {
     timeStyle: "short",
   });
 }
+
+// Midnight of the given instant's day, in APP_TIMEZONE.
+export function debutJourLocal(date: Date) {
+  return parseLocalDateTime(`${toLocalInputValue(date).slice(0, 10)}T00:00`)!;
+}
+
+export function formatHeure(date: Date) {
+  return date.toLocaleTimeString("fr-FR", { timeZone: APP_TIMEZONE, timeStyle: "short" });
+}

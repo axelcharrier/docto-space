@@ -16,7 +16,12 @@ const HEURE_MS = 60 * 60 * 1000;
 const JOUR_MS = 24 * HEURE_MS;
 const FENETRE_MS = HEURE_MS;
 
-type Prise = { prescriptionId: string; medicamentId: string; dateHeurePrevue: Date };
+type Prise = {
+  prescriptionId: string;
+  medecinId: string;
+  medicamentId: string;
+  dateHeurePrevue: Date;
+};
 
 // Start of the moment's slot today, if `now` falls within its window.
 function creneauEnCours(moment: Moment, now: Date) {
@@ -41,6 +46,7 @@ async function prisesDues(
     where: { astronauteId, datePrescription: { gt: new Date(now.getTime() - 365 * JOUR_MS) } },
     select: {
       id: true,
+      medecinId: true,
       datePrescription: true,
       lignes: { select: { medicamentId: true, moments: true, intervalleHeures: true, dureeJours: true } },
       prises: {
@@ -60,7 +66,11 @@ async function prisesDues(
       if (now.getTime() < debut || now.getTime() >= fin) continue;
 
       const dejaPrises = prescription.prises.filter((p) => p.medicamentId === ligne.medicamentId);
-      const base = { prescriptionId: prescription.id, medicamentId: ligne.medicamentId };
+      const base = {
+        prescriptionId: prescription.id,
+        medecinId: prescription.medecinId,
+        medicamentId: ligne.medicamentId,
+      };
 
       if (ligne.intervalleHeures) {
         const derniere = dejaPrises[0]?.dateHeurePrevue.getTime();
@@ -100,7 +110,8 @@ export function findAstronauteByRfid(rfidUid: string) {
 
 // Decides what the dispenser may release now and records it as taken in
 // the same transaction, so a second scan gets nothing for the same slot.
-// Returns the CIS codes of the medicines to dispense.
+// Returns the CIS codes of the medicines to dispense, and the prescribing
+// doctors so their open pages can be refreshed.
 export async function dispenserPrises(astronauteId: string, now = new Date()) {
   return prisma.$transaction(async (tx) => {
     // Serializes scans of the same astronaut: interval doses have no fixed
@@ -110,10 +121,19 @@ export async function dispenserPrises(astronauteId: string, now = new Date()) {
     const dues = await prisesDues(tx, astronauteId, now);
     if (dues.length > 0) {
       await tx.prisePlanifiee.createMany({
-        data: dues.map((prise) => ({ ...prise, datePrise: now, statut: "PRISE" as const })),
+        data: dues.map((prise) => ({
+          prescriptionId: prise.prescriptionId,
+          medicamentId: prise.medicamentId,
+          dateHeurePrevue: prise.dateHeurePrevue,
+          datePrise: now,
+          statut: "PRISE" as const,
+        })),
       });
     }
 
-    return dues.map((prise) => prise.medicamentId);
+    return {
+      medicaments: dues.map((prise) => prise.medicamentId),
+      medecinIds: dues.map((prise) => prise.medecinId),
+    };
   });
 }
