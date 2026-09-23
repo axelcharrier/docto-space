@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ROLE_HOME_PATH } from "@/lib/roles";
 
+/**
+ * Displays the home page and redirects authenticated users to their role-based page.
+ * @returns The application home page.
+ */
 export default async function Home() {
   const session = await auth();
 

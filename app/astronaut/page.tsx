@@ -27,6 +27,11 @@ import { PrescriptionLignes } from "@/components/prescription-lignes";
 import { SectionTitle } from "@/components/section-title";
 import { ToastOnMount } from "@/components/toast-on-mount";
 
+/**
+ * Displays the astronaut dashboard with prescriptions and consultation requests
+ * @param searchParams The page search parameters
+ * @returns The astronaut dashboard page
+ */
 export default async function AstronautPage({ searchParams }: PageProps<"/astronaut">) {
   const [session, params] = await Promise.all([auth(), searchParams]);
   // Never trust an id coming from the page: both lists are scoped to the

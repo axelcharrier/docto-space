@@ -2,6 +2,10 @@ import { auth } from "@/auth";
 import { listNotifications } from "@/lib/data/notifications";
 import { NotificationsList } from "@/components/notifications-list";
 
+/**
+ * Displays the notifications page for the current astronaut
+ * @returns The page containing the user's notifications list
+ */
 export default async function AstronautNotificationsPage() {
   const session = await auth();
   const notifications = await listNotifications(session!.user.id);
