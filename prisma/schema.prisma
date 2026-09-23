@@ -141,6 +141,7 @@ model Prescription {
   datePrescription DateTime @default(now())
   updatedAt        DateTime @updatedAt
   lignes           LignePrescription[]
+  prises           PrisePlanifiee[]
 
   @@index([astronauteId])
   @@index([medecinId])
@@ -159,6 +160,7 @@ model Medicament {
   denomination        String
   formePharmaceutique String
   lignes              LignePrescription[]
+  prises              PrisePlanifiee[]
 
   @@index([denomination])
 }
@@ -183,17 +185,28 @@ model LignePrescription {
   intervalleHeures Int?
   dureeJours       Int?
   instructions     String?
-  prises           PrisePlanifiee[]
 
   @@index([prescriptionId])
 }
 
+// Prise distribuée par le distributeur (lib/data/distributeur.ts).
+// Rattachée à la prescription et au médicament plutôt qu'à la ligne :
+// modifier une prescription recrée ses lignes, et l'historique du jour
+// doit survivre sinon le distributeur redonnerait la même dose.
 model PrisePlanifiee {
   id              String   @id @default(uuid())
-  ligne           LignePrescription @relation(fields: [ligneId], references: [id])
-  ligneId         String
+  prescription    Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  prescriptionId  String
+  medicament      Medicament @relation(fields: [medicamentId], references: [codeCis])
+  medicamentId    String
+  // Début du créneau pour une prise à un moment de la journée, instant du
+  // scan pour une prise à intervalle.
   dateHeurePrevue DateTime
+  datePrise       DateTime?
   statut          StatutPrise @default(A_VENIR)
+
+  // Un créneau ne peut être distribué qu'une fois.
+  @@unique([prescriptionId, medicamentId, dateHeurePrevue])
 }
 
 enum StatutPrise {
