@@ -179,7 +179,11 @@ export default async function DoctorPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-4">
-                    <PrescriptionLignes lignes={p.lignes} prises={p.prises} />
+                    <PrescriptionLignes
+                      lignes={p.lignes}
+                      datePrescription={p.datePrescription}
+                      prises={p.prises}
+                    />
                     {p.commentaire && (
                       <p className="border-t pt-4 whitespace-pre-line text-muted-foreground">
                         {p.commentaire}

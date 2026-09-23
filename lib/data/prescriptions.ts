@@ -1,7 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import { debutJourLocal } from "@/lib/datetime";
+import { HISTORIQUE_UTILE_MS } from "@/lib/prises";
 
 const LIGNES_INCLUDE = {
   lignes: {
@@ -12,13 +12,13 @@ const LIGNES_INCLUDE = {
   },
 } as const;
 
-// Doses the dispenser released today (lib/data/distributeur.ts), shown
-// under each medicine so the doctor and the astronaut can follow the day.
-function prisesDuJour() {
+// Recent doses released by the dispenser (lib/data/distributeur.ts): the
+// cards show today's ones and compute the next dose from them.
+function prisesRecentes() {
   return {
     prises: {
-      where: { datePrise: { gte: debutJourLocal(new Date()) } },
-      select: { medicamentId: true, datePrise: true },
+      where: { dateHeurePrevue: { gte: new Date(Date.now() - HISTORIQUE_UTILE_MS) } },
+      select: { medicamentId: true, dateHeurePrevue: true, datePrise: true },
       orderBy: { datePrise: "asc" },
     },
   } as const;
@@ -31,7 +31,7 @@ export function listPrescriptionsAstronaute(astronauteId: string) {
     where: { astronauteId },
     include: {
       ...LIGNES_INCLUDE,
-      ...prisesDuJour(),
+      ...prisesRecentes(),
       medecin: { select: { name: true, email: true } },
       demande: { select: { dateConsultation: true } },
     },
@@ -44,7 +44,7 @@ export function listPrescriptionsMedecin(medecinId: string) {
     where: { medecinId },
     include: {
       ...LIGNES_INCLUDE,
-      ...prisesDuJour(),
+      ...prisesRecentes(),
       astronaute: { select: { id: true, name: true, email: true } },
       demande: { select: { dateConsultation: true } },
     },
