@@ -14,6 +14,14 @@ type Ligne = {
 
 type Prise = { medicamentId: string; dateHeurePrevue: Date; datePrise: Date | null };
 
+/**
+ * Returns the label describing the next scheduled medication intake.
+ * @param ligne - The medication prescription line.
+ * @param datePrescription - The date when the prescription starts.
+ * @param prises - The recorded medication intakes.
+ * @param now - The current date and time.
+ * @returns The label describing the next intake or whether the treatment is finished.
+ */
 function libelleProchaine(ligne: Ligne, datePrescription: Date, prises: Prise[], now: Date) {
   const prochaine = prochainePrise(ligne, datePrescription, prises, now);
   if (!prochaine) return "Traitement terminé";

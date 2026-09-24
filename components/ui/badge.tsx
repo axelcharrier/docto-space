@@ -26,6 +26,14 @@ const badgeVariants = cva(
   }
 )
 
+/**
+ * Renders a badge with the specified variant and styling.
+ * @param className - Additional CSS classes applied to the badge.
+ * @param variant - The visual variant of the badge.
+ * @param render - The element or render function used to render the badge.
+ * @param props - Additional properties passed to the badge element.
+ * @returns The rendered badge component.
+ */
 function Badge({
   className,
   variant = "default",

@@ -14,6 +14,11 @@ import {
 } from "@/lib/validation/demandes";
 import type { ActionState } from "@/lib/actions/types";
 
+/**
+ * Groups validation error messages by their corresponding field.
+ * @param error - The validation error containing field issues.
+ * @returns An object mapping field names to their validation messages.
+ */
 function fieldErrorsOf(error: { issues: { path: PropertyKey[]; message: string }[] }) {
   const fieldErrors: Record<string, string[]> = {};
   for (const issue of error.issues) {
@@ -33,6 +38,12 @@ async function notifyMedecinsEt(...userIds: string[]) {
   notifyUsers([...medecins.map((m) => m.id), ...userIds]);
 }
 
+/**
+ * Creates a consultation request for the authenticated astronaut.
+ * @param _prev - The previous server action state.
+ * @param formData - The form data containing the requested consultation details.
+ * @returns The action state containing validation errors when the form is invalid.
+ */
 export async function creerDemande(
   _prev: ActionState,
   formData: FormData,
@@ -81,6 +92,12 @@ export async function creerDemande(
   redirect("/astronaut?created=1");
 }
 
+/**
+ * Accepts a consultation request and schedules the consultation with a Visio room.
+ * @param _prev - The previous server action state.
+ * @param formData - The form data containing the request and consultation details.
+ * @returns The action state containing success or validation/error information.
+ */
 export async function accepterDemande(
   _prev: ActionState,
   formData: FormData,

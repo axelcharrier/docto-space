@@ -12,6 +12,19 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button"
 import { CaretLeftIcon, CaretRightIcon, CaretDownIcon } from "@phosphor-icons/react"
 
+/**
+ * Renders a customizable calendar with localized formatting and styled navigation.
+ * @param className - Additional CSS classes applied to the calendar.
+ * @param classNames - Custom CSS classes for calendar elements.
+ * @param showOutsideDays - Whether to display days outside the current month.
+ * @param captionLayout - The layout used for the calendar caption.
+ * @param buttonVariant - The visual variant of the navigation buttons.
+ * @param locale - The locale used for date formatting.
+ * @param formatters - Custom date formatting functions.
+ * @param components - Custom calendar components.
+ * @param props - Additional properties passed to the day picker.
+ * @returns The rendered calendar component.
+ */
 function Calendar({
   className,
   classNames,
@@ -180,6 +193,15 @@ function Calendar({
   )
 }
 
+/**
+ * Renders a calendar day button with selection, range, focus, and locale support.
+ * @param className - Additional CSS classes applied to the day button.
+ * @param day - The calendar day represented by the button.
+ * @param modifiers - The state modifiers applied to the day.
+ * @param locale - The locale used for date formatting.
+ * @param props - Additional properties passed to the day button.
+ * @returns The rendered calendar day button.
+ */
 function CalendarDayButton({
   className,
   day,

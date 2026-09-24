@@ -25,6 +25,13 @@ type Props = {
   minDateTime: string;
 };
 
+/**
+ * Displays a dialog for accepting a consultation request
+ * @param demandeId The identifier of the consultation request
+ * @param dateSouhaiteeInput The requested consultation date and time
+ * @param minDateTime The minimum allowed consultation date and time
+ * @returns The acceptance dialog component
+ */
 function AccepterDialog({ demandeId, dateSouhaiteeInput, minDateTime }: Props) {
   const [open, setOpen] = useState(false);
   const [state, action] = useActionState(accepterDemande, idleState);
@@ -66,6 +73,11 @@ function AccepterDialog({ demandeId, dateSouhaiteeInput, minDateTime }: Props) {
   );
 }
 
+/**
+ * Displays a dialog for rejecting a consultation request
+ * @param demandeId The identifier of the consultation request
+ * @returns The rejection dialog component
+ */
 function RefuserDialog({ demandeId }: Pick<Props, "demandeId">) {
   const [open, setOpen] = useState(false);
   const [state, action] = useActionState(refuserDemande, idleState);
@@ -101,7 +113,11 @@ function RefuserDialog({ demandeId }: Pick<Props, "demandeId">) {
     </Dialog>
   );
 }
-
+/**
+ * Displays the available actions for a consultation request
+ * @param props The consultation request data required by the action dialogs
+ * @returns The accept and reject action buttons
+ */
 export function DemandeActions(props: Props) {
   return (
     <div className="flex gap-2">

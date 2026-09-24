@@ -1,6 +1,13 @@
 import * as React from "react"
 import { cn } from "cn"
 
+/**
+ * Renders a card container with configurable size and styling.
+ * @param className - Additional CSS classes applied to the card.
+ * @param size - The size variant of the card.
+ * @param props - Additional properties passed to the card element.
+ * @returns The rendered card component.
+ */
 function Card({
   className,
   size = "default",
@@ -19,6 +26,12 @@ function Card({
   )
 }
 
+/**
+ * Renders the header section of a card.
+ * @param className - Additional CSS classes applied to the card header.
+ * @param props - Additional properties passed to the card header element.
+ * @returns The rendered card header component.
+ */
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -32,6 +45,12 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Renders the title section of a card.
+ * @param className - Additional CSS classes applied to the card title.
+ * @param props - Additional properties passed to the card title element.
+ * @returns The rendered card title component.
+ */
 function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -45,6 +64,12 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Renders the description section of a card.
+ * @param className - Additional CSS classes applied to the card description.
+ * @param props - Additional properties passed to the card description element.
+ * @returns The rendered card description component.
+ */
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -55,6 +80,12 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Renders the action section of a card.
+ * @param className - Additional CSS classes applied to the card action.
+ * @param props - Additional properties passed to the card action element.
+ * @returns The rendered card action component.
+ */
 function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -68,6 +99,12 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Renders the content section of a card.
+ * @param className - Additional CSS classes applied to the card content.
+ * @param props - Additional properties passed to the card content element.
+ * @returns The rendered card content component.
+ */
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -78,6 +115,12 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Renders the footer section of a card.
+ * @param className - Additional CSS classes applied to the card footer.
+ * @param props - Additional properties passed to the card footer element.
+ * @returns The rendered card footer component.
+ */
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div

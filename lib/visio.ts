@@ -10,12 +10,22 @@ export class VisioError extends Error {
   }
 }
 
+/**
+ * Retrieves a required environment variable.
+ * @param name - The name of the environment variable to retrieve.
+ * @returns The environment variable value.
+ */
 function env(name: string) {
   const value = process.env[name];
   if (!value) throw new VisioError(`Variable d'environnement ${name} manquante`);
   return value;
 }
 
+/**
+ * Retrieves an access token for the Visio API using delegated credentials.
+ * @param delegatedEmail - The email address used as the delegated scope.
+ * @returns The access token returned by the Visio API.
+ */
 async function getAccessToken(delegatedEmail: string) {
   const response = await fetch(`${env("VISIO_API_URL")}/application/token/`, {
     method: "POST",
@@ -38,6 +48,11 @@ async function getAccessToken(delegatedEmail: string) {
   return data.access_token;
 }
 
+/**
+ * Creates a trusted room through the Visio API.
+ * @param delegatedEmail - The email address used for delegated API access.
+ * @returns The identifier and URL of the created Visio room.
+ */
 export async function createVisioRoom(delegatedEmail: string) {
   const token = await getAccessToken(delegatedEmail);
 

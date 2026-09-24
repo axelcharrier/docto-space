@@ -27,6 +27,11 @@ import { SectionTitle } from "@/components/section-title";
 import { DemandeActions } from "./demande-actions";
 import { PrescriptionDialog, SupprimerPrescriptionDialog } from "./prescription-dialog";
 
+/**
+ * Protects and renders the doctor section layout
+ * @param children The content to render inside the layout
+ * @returns The layout containing the header and auto-refresh component
+ */
 export default async function DoctorPage() {
   const session = await auth();
   const medecinId = session!.user.id;

@@ -21,6 +21,11 @@ function toDate(value: string) {
   return y ? new Date(y, m - 1, d) : undefined;
 }
 
+/**
+ * Converts a date to a YYYY-MM-DD string.
+ * @param date - The date to convert.
+ * @returns The formatted date string.
+ */
 function toDateValue(date: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -40,6 +45,11 @@ function formatDate(value: string) {
     : "Choisir une date";
 }
 
+/**
+ * Formats a time slot using the French hour notation.
+ * @param slot - The time slot to format.
+ * @returns The formatted time slot.
+ */
 function formatTime(slot: string) {
   return slot.replace(":", " h ");
 }

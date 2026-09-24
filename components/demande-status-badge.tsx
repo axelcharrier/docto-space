@@ -7,6 +7,11 @@ const STATUTS: Record<StatutDemande, { label: string; variant: "outline" | "defa
   REFUSEE: { label: "Refusée", variant: "destructive" },
 };
 
+/**
+ * Renders a badge displaying the status of a consultation request.
+ * @param statut - The status of the consultation request.
+ * @returns The status badge component.
+ */
 export function DemandeStatusBadge({ statut }: { statut: StatutDemande }) {
   const { label, variant } = STATUTS[statut];
   return <Badge variant={variant}>{label}</Badge>;

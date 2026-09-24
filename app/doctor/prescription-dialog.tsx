@@ -49,10 +49,19 @@ export type Astronaute = { id: string; name: string | null; email: string | null
 // label; zod strips it server-side, only `codeCis` matters there.
 type LigneForm = LigneInput & { medicament: MedicamentOption | null };
 
+/**
+ * Returns the astronaut's name, email, or a default label
+ * @param a The astronaut whose display name is returned
+ * @returns The astronaut's name, email, or "Astronaute"
+ */
 function nomAstronaute(a: Astronaute) {
   return a.name ?? a.email ?? "Astronaute";
 }
 
+/**
+ * Creates an empty medication prescription line with default values
+ * @returns A new empty medication prescription line
+ */
 function ligneVide(): LigneForm {
   return {
     codeCis: "",
@@ -66,8 +75,13 @@ function ligneVide(): LigneForm {
   };
 }
 
-// Rebuilds the editable form state from what was saved. The structured
-// columns exist precisely so we never have to parse `posologie` back.
+/**
+ * Converts a medical prescription into form lines.
+ * Rebuilds the editable form state from what was saved. The structured
+ * columns exist precisely so we never have to parse `posologie` back.
+ * @param prescription - The medical prescription to convert.
+ * @returns The prescription lines formatted for the form.
+ */
 function lignesDe(prescription: PrescriptionMedecin): LigneForm[] {
   return prescription.lignes.map((ligne) => ({
     codeCis: ligne.medicament.codeCis,
@@ -81,6 +95,15 @@ function lignesDe(prescription: PrescriptionMedecin): LigneForm[] {
   }));
 }
 
+/**
+ * Displays a dialog for creating or editing a medical prescription
+ * @param astronautes - The list of astronauts available for the prescription
+ * @param prescription - The existing prescription when editing
+ * @param astronauteId - The pre-selected astronaut identifier
+ * @param demandeId - The consultation request identifier associated with the prescription
+ * @param trigger - The element that opens the dialog
+ * @returns The prescription creation or editing dialog
+ */
 export function PrescriptionDialog({
   astronautes,
   prescription,
@@ -224,6 +247,15 @@ export function PrescriptionDialog({
   );
 }
 
+/**
+ * Displays and manages the fields for a medication prescription line
+ * @param index - The index of the prescription line
+ * @param ligne - The medication prescription line data
+ * @param state - The current form action state
+ * @param onChange - Updates the prescription line fields
+ * @param onRemove - Removes the prescription line when provided
+ * @returns The medication prescription line fields
+ */
 function LigneFields({
   index,
   ligne,
@@ -374,6 +406,11 @@ function LigneFields({
   );
 }
 
+/**
+ * Displays a dialog for confirming the deletion of a prescription
+ * @param prescriptionId - The identifier of the prescription to delete
+ * @returns The prescription deletion confirmation dialog
+ */
 export function SupprimerPrescriptionDialog({ prescriptionId }: { prescriptionId: string }) {
   const [open, setOpen] = useState(false);
   const [state, action] = useActionState(supprimerPrescription, idleState);

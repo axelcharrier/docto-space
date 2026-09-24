@@ -2,6 +2,11 @@ import { requireRole } from "@/lib/dal";
 import { AppHeader } from "@/components/app-header";
 import { AutoRefresh } from "@/components/auto-refresh";
 
+/**
+ * Protects and renders the doctor section layout
+ * @param children The content to render inside the layout
+ * @returns The layout containing the header and auto-refresh component
+ */
 export default async function DoctorLayout({
   children,
 }: {

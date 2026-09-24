@@ -11,6 +11,11 @@ const partsFormatter = new Intl.DateTimeFormat("en-US", {
   second: "2-digit",
 });
 
+/**
+ * Extracts the local date and time components from a date.
+ * @param date - The date to extract components from.
+ * @returns The year, month, day, hour, minute, and second components.
+ */
 function wallClockParts(date: Date) {
   const parts = Object.fromEntries(
     partsFormatter.formatToParts(date).map((p) => [p.type, p.value]),
@@ -45,12 +50,22 @@ export function parseLocalDateTime(value: string): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/**
+ * Converts a date to a local date-time input value.
+ * @param date - The date to convert.
+ * @returns The date formatted as YYYY-MM-DDTHH:mm.
+ */
 export function toLocalInputValue(date: Date) {
   const p = wallClockParts(date);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}`;
 }
 
+/**
+ * Formats a date and time using the French locale and application time zone.
+ * @param date - The date to format.
+ * @returns The formatted date and time string.
+ */
 export function formatDateTime(date: Date) {
   return date.toLocaleString("fr-FR", {
     timeZone: APP_TIMEZONE,
@@ -64,6 +79,11 @@ export function debutJourLocal(date: Date) {
   return parseLocalDateTime(`${toLocalInputValue(date).slice(0, 10)}T00:00`)!;
 }
 
+/**
+ * Formats a date as a short time using the French locale and application time zone.
+ * @param date - The date to format.
+ * @returns The formatted time string.
+ */
 export function formatHeure(date: Date) {
   return date.toLocaleTimeString("fr-FR", { timeZone: APP_TIMEZONE, timeStyle: "short" });
 }
