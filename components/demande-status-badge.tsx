@@ -5,6 +5,7 @@ const STATUTS: Record<StatutDemande, { label: string; variant: "outline" | "defa
   EN_ATTENTE: { label: "En attente", variant: "outline" },
   VALIDEE: { label: "Planifiée", variant: "default" },
   REFUSEE: { label: "Refusée", variant: "destructive" },
+  ANNULEE: { label: "Annulée", variant: "destructive" },
 };
 
 /**
