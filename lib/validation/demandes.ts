@@ -39,3 +39,7 @@ export const refuserDemandeSchema = z.object({
   demandeId: z.string().uuid(),
   motifRefus: z.string().trim().max(1000, "1000 caractères maximum").optional(),
 });
+
+export const annulerConsultationSchema = z.object({
+  demandeId: z.string().uuid(),
+});

@@ -132,3 +132,14 @@
     @apply bg-background text-foreground;
   }
 }
+/* Countdown ring of the cancellation undo toast
+   (components/annuler-consultation-button.tsx): the stroke empties over the
+   animation's duration. */
+@keyframes countdown-ring {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: var(--ring-length);
+  }
+}

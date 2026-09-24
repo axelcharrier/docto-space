@@ -25,6 +25,7 @@ model User {
 
   demandesEnvoyees  DemandeConsultation[] @relation("DemandesAstronaute")
   demandesRecues    DemandeConsultation[] @relation("DemandesMedecin")
+  demandesAnnulees  DemandeConsultation[] @relation("DemandesAnnulees")
   prescriptionsRecues   Prescription[] @relation("PrescriptionsAstronaute")
   prescriptionsEmises   Prescription[] @relation("PrescriptionsMedecin")
   notifications     Notification[]
@@ -84,6 +85,11 @@ model DemandeConsultation {
   motifRefus       String?  @db.Text
   lienVisio        String?
   visioRoomId      String?
+  // Renseignés quand une consultation planifiée est annulée, par le médecin
+  // ou par l'astronaute (lib/actions/demandes.ts).
+  annuleePar       User?    @relation("DemandesAnnulees", fields: [annuleeParId], references: [id])
+  annuleeParId     String?
+  annuleeLe        DateTime?
   prescriptions    Prescription[]
   notifications    Notification[]
   createdAt        DateTime @default(now())
@@ -96,6 +102,7 @@ enum StatutDemande {
   EN_ATTENTE
   VALIDEE
   REFUSEE
+  ANNULEE
 }
 
 model Notification {
@@ -122,6 +129,7 @@ enum TypeNotification {
   NOUVELLE_PRESCRIPTION
   PRESCRIPTION_MODIFIEE
   PRESCRIPTION_SUPPRIMEE
+  CONSULTATION_ANNULEE
 }
 
 model Prescription {
