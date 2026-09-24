@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   description: "Téléconsultation médicale pour astronautes",
 };
 
+/**
+ * Defines the root layout of the application and provides the theme and toast context.
+ * @param children - The content to render inside the root layout.
+ * @returns The root HTML layout of the application.
+ */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html

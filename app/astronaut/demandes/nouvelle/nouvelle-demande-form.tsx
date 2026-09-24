@@ -11,6 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { DateTimeField } from "@/components/datetime-field";
 import { SubmitButton } from "@/components/submit-button";
 
+/**
+ * Displays the form that allows a user to create a new request
+ * @param minDateTime Earliest date and time at which a request can be scheduled
+ * @returns The form for creating a new request
+ */
 export function NouvelleDemandeForm({ minDateTime }: { minDateTime: string }) {
   const [state, action] = useActionState(creerDemande, idleState);
   useActionToast(state);

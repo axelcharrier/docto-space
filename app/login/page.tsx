@@ -2,6 +2,11 @@ import { signIn, auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ROLE_HOME_PATH } from "@/lib/roles";
 
+/**
+ * Displays the login page and redirects authenticated users to their role-based home page.
+ * @param searchParams - The page search parameters containing an optional callback URL.
+ * @returns The login page.
+ */
 export default async function LoginPage({
   searchParams,
 }: {

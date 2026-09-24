@@ -12,6 +12,11 @@ export const ROLE_TO_DB_ROLE: Record<Role, DbRole> = {
   astronaut: DbRole.ASTRONAUTE,
 };
 
+/**
+ * Checks whether a value is a valid application role.
+ * @param value - The value to check.
+ * @returns Whether the value is a valid role.
+ */
 export function isRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value);
 }
