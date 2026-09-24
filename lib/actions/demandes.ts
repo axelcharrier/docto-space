@@ -3,12 +3,14 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/dal";
+import { requireRole, requireSession } from "@/lib/dal";
 import { formatDateTime } from "@/lib/datetime";
 import { createVisioRoom, VisioError } from "@/lib/visio";
 import { notifyUsers } from "@/lib/events";
+import { debutConsultationsNonTerminees } from "@/lib/consultations";
 import {
   accepterDemandeSchema,
+  annulerConsultationSchema,
   creerDemandeSchema,
   refuserDemandeSchema,
 } from "@/lib/validation/demandes";
@@ -223,4 +225,85 @@ export async function refuserDemande(
   await notifyMedecinsEt(demande.astronauteId);
   refresh();
   return { status: "success", message: "Demande refusée" };
+}
+
+// Either side of a planned consultation can cancel it, as long as it is not
+// over. Both get a notification: the other party to be warned, the author
+// as a trace in their history. The 15-second undo happens client side,
+// before this action is called — once here, the cancellation is final.
+export async function annulerConsultation(demandeId: string): Promise<ActionState> {
+  const session = await requireSession();
+
+  const parsed = annulerConsultationSchema.safeParse({ demandeId });
+  if (!parsed.success) {
+    return { status: "error", message: "Consultation introuvable." };
+  }
+
+  // Scoped to the signed-in user: only the doctor or the astronaut of this
+  // consultation can find it.
+  const demande = await prisma.demandeConsultation.findFirst({
+    where: {
+      id: parsed.data.demandeId,
+      OR: [{ medecinId: session.user.id }, { astronauteId: session.user.id }],
+    },
+    include: {
+      astronaute: { select: { name: true, email: true } },
+      medecin: { select: { name: true, email: true } },
+    },
+  });
+  if (!demande?.medecinId || !demande.dateConsultation) {
+    return { status: "error", message: "Consultation introuvable." };
+  }
+
+  const parMedecin = session.user.id === demande.medecinId;
+  const autre = parMedecin ? demande.astronaute : demande.medecin;
+  const autreNom = autre?.name ?? autre?.email ?? (parMedecin ? "l'astronaute" : "le médecin");
+  const auteurNom =
+    session.user.name ?? session.user.email ?? (parMedecin ? "Le médecin" : "L'astronaute");
+  const quand = formatDateTime(demande.dateConsultation);
+
+  const ok = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.demandeConsultation.updateMany({
+      where: {
+        id: demande.id,
+        statut: "VALIDEE",
+        dateConsultation: { gte: debutConsultationsNonTerminees() },
+      },
+      data: { statut: "ANNULEE", annuleeParId: session.user.id, annuleeLe: new Date() },
+    });
+    if (count === 0) return false;
+
+    await tx.notification.createMany({
+      data: [
+        {
+          userId: parMedecin ? demande.astronauteId : demande.medecinId!,
+          type: "CONSULTATION_ANNULEE",
+          titre: "Consultation annulée",
+          message: `${auteurNom} a annulé la consultation du ${quand}.`,
+          lienUrl: parMedecin ? "/astronaut" : "/doctor",
+          demandeId: demande.id,
+        },
+        {
+          userId: session.user.id,
+          type: "CONSULTATION_ANNULEE",
+          titre: "Consultation annulée",
+          message: `Vous avez annulé la consultation du ${quand} avec ${autreNom}.`,
+          lienUrl: parMedecin ? "/doctor" : "/astronaut",
+          demandeId: demande.id,
+        },
+      ],
+    });
+    return true;
+  });
+
+  if (!ok) {
+    return {
+      status: "error",
+      message: "Cette consultation est déjà annulée ou terminée.",
+    };
+  }
+
+  notifyUsers([demande.astronauteId, demande.medecinId]);
+  refresh();
+  return { status: "success", message: "Consultation annulée" };
 }

@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AnnulerConsultationButton } from "@/components/annuler-consultation-button";
 import { MetaLine } from "@/components/meta-line";
 import { PageHeader } from "@/components/page-header";
 import { PrescriptionLignes } from "@/components/prescription-lignes";
@@ -142,6 +143,7 @@ export default async function DoctorPage() {
                         </Button>
                       }
                     />
+                    <AnnulerConsultationButton demandeId={c.id} />
                   </CardFooter>
                 </Card>
               </li>

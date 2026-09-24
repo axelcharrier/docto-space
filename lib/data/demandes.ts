@@ -1,10 +1,19 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { debutConsultationsNonTerminees } from "@/lib/consultations";
 
+// Planned or cancelled consultations drop out of the list once their slot is
+// over; pending and refused requests have no slot and always stay.
 export function listDemandesAstronaute(astronauteId: string) {
   return prisma.demandeConsultation.findMany({
-    where: { astronauteId },
+    where: {
+      astronauteId,
+      OR: [
+        { dateConsultation: null },
+        { dateConsultation: { gte: debutConsultationsNonTerminees() } },
+      ],
+    },
     include: { medecin: { select: { name: true, email: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -19,9 +28,12 @@ export function listDemandesEnAttente() {
 }
 
 export function listConsultationsMedecin(medecinId: string) {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   return prisma.demandeConsultation.findMany({
-    where: { medecinId, statut: "VALIDEE", dateConsultation: { gte: since } },
+    where: {
+      medecinId,
+      statut: "VALIDEE",
+      dateConsultation: { gte: debutConsultationsNonTerminees() },
+    },
     include: { astronaute: { select: { name: true, email: true } } },
     orderBy: { dateConsultation: "asc" },
   });
