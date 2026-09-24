@@ -13,6 +13,11 @@ import {
 } from "@/lib/validation/prescriptions";
 import type { ActionState } from "@/lib/actions/types";
 
+/**
+ * Groups validation error messages by their corresponding field path.
+ * @param error - The validation error containing field issues.
+ * @returns An object mapping field paths to their validation messages.
+ */
 function fieldErrorsOf(error: { issues: { path: PropertyKey[]; message: string }[] }) {
   const fieldErrors: Record<string, string[]> = {};
   for (const issue of error.issues) {
@@ -61,6 +66,11 @@ async function checkDemande(demandeId: string, medecinId: string, astronauteId: 
   );
 }
 
+/**
+ * Checks whether a user has the astronaut role.
+ * @param astronauteId - The identifier of the user to check.
+ * @returns Whether the user exists and has the astronaut role.
+ */
 async function checkAstronaute(astronauteId: string) {
   const user = await prisma.user.findUnique({
     where: { id: astronauteId },
@@ -69,6 +79,12 @@ async function checkAstronaute(astronauteId: string) {
   return user?.role === "ASTRONAUTE";
 }
 
+/**
+ * Creates a medical prescription for an astronaut and notifies the relevant users.
+ * @param _prev - The previous server action state.
+ * @param formData - The form data containing the astronaut, consultation, and medication details.
+ * @returns The action state containing success or validation/error information.
+ */
 export async function creerPrescription(
   _prev: ActionState,
   formData: FormData,
@@ -116,9 +132,8 @@ export async function creerPrescription(
         userId: astronauteId,
         type: "NOUVELLE_PRESCRIPTION",
         titre: "Nouvelle prescription",
-        message: `${lignes.length} médicament${lignes.length > 1 ? "s" : ""} vous ${
-          lignes.length > 1 ? "ont" : "a"
-        } été prescrit${lignes.length > 1 ? "s" : ""}.`,
+        message: `${lignes.length} médicament${lignes.length > 1 ? "s" : ""} vous ${lignes.length > 1 ? "ont" : "a"
+          } été prescrit${lignes.length > 1 ? "s" : ""}.`,
         lienUrl: "/astronaut",
       },
     });
@@ -129,6 +144,12 @@ export async function creerPrescription(
   return { status: "success", message: "Prescription enregistrée" };
 }
 
+/**
+ * Modifies an existing medical prescription and notifies the astronaut.
+ * @param _prev - The previous server action state.
+ * @param formData - The form data containing the prescription and updated medication details.
+ * @returns The action state containing success or validation/error information.
+ */
 export async function modifierPrescription(
   _prev: ActionState,
   formData: FormData,
@@ -188,6 +209,12 @@ export async function modifierPrescription(
   return { status: "success", message: "Prescription modifiée" };
 }
 
+/**
+ * Deletes an existing medical prescription and notifies the astronaut.
+ * @param _prev - The previous server action state.
+ * @param formData - The form data containing the prescription identifier.
+ * @returns The action state containing success or validation/error information.
+ */
 export async function supprimerPrescription(
   _prev: ActionState,
   formData: FormData,

@@ -4,6 +4,12 @@ import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox"
 import { cn } from "cn"
 import { CheckIcon } from "@phosphor-icons/react"
 
+/**
+ * Renders a checkbox with focus, validation, and checked-state styling.
+ * @param className - Additional CSS classes applied to the checkbox.
+ * @param props - Additional properties passed to the checkbox primitive.
+ * @returns The rendered checkbox component.
+ */
 function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
   return (
     <CheckboxPrimitive.Root

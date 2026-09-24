@@ -5,6 +5,11 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/dal";
 
+/**
+ * Marks a notification as read and redirects to its associated link when available.
+ * @param formData - The form data containing the notification identifier.
+ * @returns Nothing when the notification is missing or has no redirect link.
+ */
 export async function marquerLue(formData: FormData) {
   const session = await requireSession();
   const id = formData.get("id");
@@ -25,6 +30,9 @@ export async function marquerLue(formData: FormData) {
   refresh();
 }
 
+/**
+ * Marks all unread notifications of the current user as read.
+ */
 export async function marquerToutesLues() {
   const session = await requireSession();
   await prisma.notification.updateMany({

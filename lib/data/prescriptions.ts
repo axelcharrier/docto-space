@@ -39,6 +39,11 @@ export function listPrescriptionsAstronaute(astronauteId: string) {
   });
 }
 
+/**
+ * Retrieves the prescriptions created by a doctor.
+ * @param medecinId - The identifier of the doctor.
+ * @returns The doctor's prescriptions with medication, intake, astronaut, and consultation details.
+ */
 export function listPrescriptionsMedecin(medecinId: string) {
   return prisma.prescription.findMany({
     where: { medecinId },
@@ -63,6 +68,11 @@ const MEDICAMENT_SELECT = {
   formePharmaceutique: true,
 } as const;
 
+/**
+ * Searches the medication reference by denomination.
+ * @param query - The search query used to filter medications.
+ * @returns A list of matching medications ordered by denomination.
+ */
 export async function searchMedicaments(query: string) {
   const q = query.trim();
 
@@ -100,6 +110,10 @@ export async function searchMedicaments(query: string) {
 
 export type MedicamentOption = Awaited<ReturnType<typeof searchMedicaments>>[number];
 
+/**
+ * Retrieves all users with the astronaut role.
+ * @returns The list of astronauts ordered by name and email.
+ */
 export function listAstronautes() {
   return prisma.user.findMany({
     where: { role: "ASTRONAUTE" },

@@ -76,6 +76,11 @@ async function prisesDues(
   return dues;
 }
 
+/**
+ * Finds an astronaut associated with the specified RFID identifier.
+ * @param rfidUid - The RFID identifier to search for.
+ * @returns The astronaut's identifier, or null if no matching astronaut is found.
+ */
 export function findAstronauteByRfid(rfidUid: string) {
   return prisma.user.findFirst({
     where: { rfidUid, role: "ASTRONAUTE" },
