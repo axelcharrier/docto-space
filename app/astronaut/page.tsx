@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AnnulerConsultationButton } from "@/components/annuler-consultation-button";
 import { DemandeStatusBadge } from "@/components/demande-status-badge";
 import { MetaLine } from "@/components/meta-line";
 import { PageHeader } from "@/components/page-header";
@@ -159,7 +160,16 @@ export default async function AstronautPage({ searchParams }: PageProps<"/astron
                             Rejoindre la visio
                           </Button>
                         )}
+                        <AnnulerConsultationButton demandeId={demande.id} />
                       </div>
+                    )}
+
+                    {demande.statut === "ANNULEE" && demande.dateConsultation && (
+                      <p className="border-t pt-4 text-muted-foreground">
+                        Consultation du {formatDateTime(demande.dateConsultation)} annulée
+                        {demande.annuleeParId === session!.user.id ? " par vous" : " par le médecin"}
+                        {demande.annuleeLe && ` le ${formatDateTime(demande.annuleeLe)}`}.
+                      </p>
                     )}
 
                     {demande.statut === "REFUSEE" && (

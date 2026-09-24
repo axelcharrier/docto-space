@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { debutConsultationsNonTerminees } from "@/lib/consultations";
 
 /**
  * Retrieves the consultation requests created by an astronaut.
@@ -9,14 +10,19 @@ import { prisma } from "@/lib/prisma";
  */
 export function listDemandesAstronaute(astronauteId: string) {
   return prisma.demandeConsultation.findMany({
-    where: { astronauteId },
+    where: {
+      astronauteId,
+      OR: [
+        { dateConsultation: null },
+        { dateConsultation: { gte: debutConsultationsNonTerminees() } },
+      ],
+    },
     include: { medecin: { select: { name: true, email: true } } },
     orderBy: { createdAt: "desc" },
   });
 }
 
 /**
- * Retrieves all pending consultation requests without an assigned doctor.
  * @returns The pending consultation requests with astronaut details.
  */
 export function listDemandesEnAttente() {
@@ -33,9 +39,12 @@ export function listDemandesEnAttente() {
  * @returns The doctor's recent consultations with astronaut details.
  */
 export function listConsultationsMedecin(medecinId: string) {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   return prisma.demandeConsultation.findMany({
-    where: { medecinId, statut: "VALIDEE", dateConsultation: { gte: since } },
+    where: {
+      medecinId,
+      statut: "VALIDEE",
+      dateConsultation: { gte: debutConsultationsNonTerminees() },
+    },
     include: { astronaute: { select: { name: true, email: true } } },
     orderBy: { dateConsultation: "asc" },
   });
